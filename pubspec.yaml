@@ -24,3 +24,6 @@ flutter:
     - assets/images/ssh_logo.png
     - assets/icons/app_icon.png
     - assets/images/logincover.png
+    - assets/images/resort.png
+    - assets/images/coliving.png
+    - assets/images/hotel.png
