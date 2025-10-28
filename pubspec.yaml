@@ -23,3 +23,4 @@ flutter:
   assets:
     - assets/images/ssh_logo.png
     - assets/icons/app_icon.png
+    - assets/images/logincover.png
