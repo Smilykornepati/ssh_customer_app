@@ -75,7 +75,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFE31E24), // SSH red color
+      backgroundColor: const Color.fromARGB(255, 253, 253, 253), // SSH red color
       body: Center(
         child: AnimatedBuilder(
           animation: _animationController,
@@ -98,17 +98,17 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                       child: Padding(
                         padding: const EdgeInsets.all(40.0),
                         child: Image.asset(
-                          'assets/images/ssh_logo.png',
+                          'assets/images/logowhite.png.jpeg',
                           fit: BoxFit.contain,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 40),
+                    const SizedBox(height: 10),
                     // Tagline with animation
                     const Text(
                       'Stay Short, Pay Smart',
                       style: TextStyle(
-                        color: Colors.white,
+                        color: Colors.red,
                         fontSize: 24,
                         fontWeight: FontWeight.w500,
                         letterSpacing: 1.5,
@@ -116,16 +116,7 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
                     ),
                     const SizedBox(height: 50),
                     // Loading indicator
-                    SizedBox(
-                      width: 40,
-                      height: 40,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 3,
-                        valueColor: AlwaysStoppedAnimation<Color>(
-                          Colors.white.withOpacity(0.7),
-                        ),
-                      ),
-                    ),
+                  
                   ],
                 ),
               ),

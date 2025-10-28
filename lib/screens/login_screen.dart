@@ -40,7 +40,6 @@ class _LoginScreenState extends State<LoginScreen> {
       _isOtpSent = true;
     });
 
-    _showSnackBar('OTP sent successfully to +91 ${_phoneController.text}');
   }
 
   void _verifyOtp() async {
@@ -139,10 +138,10 @@ class _LoginScreenState extends State<LoginScreen> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                         child: Image.asset(
-                          'assets/images/ssh_logo.png',
+                          'assets/images/logowhite.png.jpeg',
                           width: 50,
                           height: 50,
-                          fit: BoxFit.contain,
+                          fit: BoxFit.cover,
                         ),
                       ),
                     ),
