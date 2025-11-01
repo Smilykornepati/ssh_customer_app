@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'edit_profile_screen.dart';
-import 'favorites_screen.dart';
+import 'favourites_screen.dart';
 import 'notifications_screen.dart';
 import 'help_support_screen.dart';
 import 'about_us_screen.dart';
