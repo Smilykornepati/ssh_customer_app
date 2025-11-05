@@ -96,9 +96,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void _selectToDate() async {
     if (_fromDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select check-in date first'),
-          backgroundColor: Color(0xFFE31E24),
+        SnackBar(
+          content: const Text('Please select check-in date first'),
+          backgroundColor: const Color(0xFFE31E24),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       return;
@@ -154,9 +156,11 @@ class _HomeScreenState extends State<HomeScreen> {
   void _searchProperties() {
     if (_selectedLocation == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select a location'),
-          backgroundColor: Color(0xFFE31E24),
+        SnackBar(
+          content: const Text('Please select a location'),
+          backgroundColor: const Color(0xFFE31E24),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       return;
@@ -164,9 +168,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_fromDate == null || _toDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select check-in and check-out dates'),
-          backgroundColor: Color(0xFFE31E24),
+        SnackBar(
+          content: const Text('Please select check-in and check-out dates'),
+          backgroundColor: const Color(0xFFE31E24),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       return;
@@ -174,9 +180,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
     if (_adults + _children == 0) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Please select at least one guest'),
-          backgroundColor: Color(0xFFE31E24),
+        SnackBar(
+          content: const Text('Please select at least one guest'),
+          backgroundColor: const Color(0xFFE31E24),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         ),
       );
       return;
@@ -205,509 +213,587 @@ class _HomeScreenState extends State<HomeScreen> {
     final hours = _calculateHoursBetweenDates();
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFFAFAFA),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
-        title: Row(
-          children: [
-            Image.asset(
-              'assets/images/ssh_logo.png',
-              height: 40,
-            ),
-            const SizedBox(width: 10),
-            const Text(
-              'SSH Hotels',
-              style: TextStyle(
-                color: Color(0xFFE31E24),
-                fontWeight: FontWeight.bold,
-                fontSize: 20,
-              ),
-            ),
-          ],
+        title: const Text(
+          'SSH Hotels',
+          style: TextStyle(
+            color: Color(0xFF1F2937),
+            fontWeight: FontWeight.bold,
+            fontSize: 22,
+            letterSpacing: -0.5,
+          ),
         ),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined, color: Colors.black87),
-            onPressed: () {},
+          Container(
+            margin: const EdgeInsets.only(right: 12),
+            decoration: BoxDecoration(
+              color: const Color(0xFFFFF5F5),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: IconButton(
+              icon: const Icon(Icons.notifications_outlined, color: Color(0xFFE31E24), size: 22),
+              onPressed: () {},
+            ),
           ),
         ],
       ),
       body: SingleChildScrollView(
-        child: Padding(
-          padding: const EdgeInsets.all(20.0),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'Find Your Perfect',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w300,
-                  color: Colors.black87,
-                ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
               ),
-              const Text(
-                'Short Stay',
-                style: TextStyle(
-                  fontSize: 32,
-                  fontWeight: FontWeight.bold,
-                  color: Color(0xFFE31E24),
-                ),
-              ),
-              const SizedBox(height: 30),
-              const Text(
-                'Property Type',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 15),
-              Row(
-                children: _propertyTypes.map((type) {
-                  final isSelected = _selectedPropertyType == type;
-                  return Expanded(
-                    child: GestureDetector(
-                      onTap: () {
-                        setState(() {
-                          _selectedPropertyType = type;
-                        });
-                      },
-                      child: Container(
-                        margin: const EdgeInsets.only(right: 10),
-                        padding: const EdgeInsets.symmetric(vertical: 15),
-                        decoration: BoxDecoration(
-                          color: isSelected ? const Color(0xFFE31E24) : Colors.grey[100],
-                          borderRadius: BorderRadius.circular(15),
-                          border: Border.all(
-                            color: isSelected ? const Color(0xFFE31E24) : Colors.grey[300]!,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Icon(
-                              type == 'Resort'
-                                  ? Icons.beach_access
-                                  : type == 'Co-Living'
-                                      ? Icons.apartment
-                                      : Icons.hotel,
-                              color: isSelected ? Colors.white : Colors.grey[700],
-                              size: 30,
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              type,
-                              style: TextStyle(
-                                color: isSelected ? Colors.white : Colors.grey[700],
-                                fontWeight: FontWeight.w600,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Find Your',
+                      style: TextStyle(
+                        fontSize: 32,
+                        fontWeight: FontWeight.w300,
+                        color: Color(0xFF374151),
+                        letterSpacing: -0.5,
                       ),
                     ),
-                  );
-                }).toList(),
-              ),
-              const SizedBox(height: 25),
-              const Text(
-                'Location',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                child: DropdownButtonHideUnderline(
-                  child: DropdownButton<String>(
-                    isExpanded: true,
-                    value: _selectedLocation,
-                    hint: const Padding(
-                      padding: EdgeInsets.symmetric(horizontal: 15),
-                      child: Text('Select location'),
-                    ),
-                    icon: const Padding(
-                      padding: EdgeInsets.only(right: 15),
-                      child: Icon(Icons.keyboard_arrow_down),
-                    ),
-                    items: _locations.map((String location) {
-                      return DropdownMenuItem<String>(
-                        value: location,
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 15),
-                          child: Text(location),
-                        ),
-                      );
-                    }).toList(),
-                    onChanged: (String? newValue) {
-                      setState(() {
-                        _selectedLocation = newValue;
-                      });
-                    },
-                  ),
-                ),
-              ),
-              const SizedBox(height: 25),
-              const Text(
-                'Number of Guests',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.black87,
-                ),
-              ),
-              const SizedBox(height: 10),
-              Container(
-                decoration: BoxDecoration(
-                  color: Colors.grey[50],
-                  borderRadius: BorderRadius.circular(15),
-                  border: Border.all(color: Colors.grey[200]!),
-                ),
-                padding: const EdgeInsets.all(15),
-                child: Column(
-                  children: [
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         const Text(
-                          'Adults',
+                          'Perfect ',
                           style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF1F2937),
+                            letterSpacing: -0.5,
                           ),
                         ),
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                if (_adults > 1) {
-                                  setState(() {
-                                    _adults--;
-                                  });
-                                }
-                              },
-                              icon: Container(
-                                decoration: BoxDecoration(
-                                  color: _adults > 1 ? const Color(0xFFE31E24) : Colors.grey[300],
-                                  shape: BoxShape.circle,
-                                ),
-                                padding: const EdgeInsets.all(4),
-                                child: const Icon(
-                                  Icons.remove,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              width: 40,
-                              alignment: Alignment.center,
-                              child: Text(
-                                '$_adults',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _adults++;
-                                });
-                              },
-                              icon: Container(
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFE31E24),
-                                  shape: BoxShape.circle,
-                                ),
-                                padding: const EdgeInsets.all(4),
-                                child: const Icon(
-                                  Icons.add,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                          ],
+                        Text(
+                          'Stay',
+                          style: TextStyle(
+                            fontSize: 32,
+                            fontWeight: FontWeight.bold,
+                            color: const Color(0xFFE31E24),
+                            letterSpacing: -0.5,
+                          ),
                         ),
                       ],
                     ),
-                    const Divider(),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Children',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                        Row(
-                          children: [
-                            IconButton(
-                              onPressed: () {
-                                if (_children > 0) {
-                                  setState(() {
-                                    _children--;
-                                  });
-                                }
-                              },
-                              icon: Container(
-                                decoration: BoxDecoration(
-                                  color: _children > 0 ? const Color(0xFFE31E24) : Colors.grey[300],
-                                  shape: BoxShape.circle,
-                                ),
-                                padding: const EdgeInsets.all(4),
-                                child: const Icon(
-                                  Icons.remove,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                            Container(
-                              width: 40,
-                              alignment: Alignment.center,
-                              child: Text(
-                                '$_children',
-                                style: const TextStyle(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                            ),
-                            IconButton(
-                              onPressed: () {
-                                setState(() {
-                                  _children++;
-                                });
-                              },
-                              icon: Container(
-                                decoration: const BoxDecoration(
-                                  color: Color(0xFFE31E24),
-                                  shape: BoxShape.circle,
-                                ),
-                                padding: const EdgeInsets.all(4),
-                                child: const Icon(
-                                  Icons.add,
-                                  color: Colors.white,
-                                  size: 18,
-                                ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                    const SizedBox(height: 6),
+                    Text(
+                      'Book properties by the hour',
+                      style: TextStyle(
+                        fontSize: 15,
+                        color: Colors.grey[600],
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 25),
-              Row(
-                children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Check-in',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
-                        ),
-                        const SizedBox(height: 10),
-                        GestureDetector(
-                          onTap: _selectFromDate,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              borderRadius: BorderRadius.circular(15),
-                              border: Border.all(color: Colors.grey[200]!),
-                            ),
-                            padding: const EdgeInsets.all(15),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.calendar_today,
-                                      size: 18,
-                                      color: Color(0xFFE31E24),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.04),
+                      blurRadius: 20,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Property Type',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF374151),
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+                    Row(
+                      children: _propertyTypes.map((type) {
+                        final isSelected = _selectedPropertyType == type;
+                        return Expanded(
+                          child: GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedPropertyType = type;
+                              });
+                            },
+                            child: Container(
+                              margin: const EdgeInsets.only(right: 10),
+                              padding: const EdgeInsets.symmetric(vertical: 18),
+                              decoration: BoxDecoration(
+                                color: isSelected ? const Color(0xFFE31E24) : Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(
+                                  color: isSelected ? const Color(0xFFE31E24) : const Color(0xFFE5E7EB),
+                                  width: 1.5,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  Icon(
+                                    type == 'Resort'
+                                        ? Icons.beach_access_rounded
+                                        : type == 'Co-Living'
+                                            ? Icons.apartment_rounded
+                                            : Icons.hotel_rounded,
+                                    color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                                    size: 28,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Text(
+                                    type,
+                                    style: TextStyle(
+                                      color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 12,
                                     ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _fromDate != null
-                                          ? DateFormat('dd MMM').format(_fromDate!)
-                                          : 'Date',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: _fromDate != null
-                                            ? Colors.black87
-                                            : Colors.grey,
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Location',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF374151),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+                      ),
+                      child: ButtonTheme(
+                        alignedDropdown: true,
+                        child: DropdownButtonHideUnderline(
+                          child: DropdownButton<String>(
+                            isExpanded: true,
+                            value: _selectedLocation,
+                            menuMaxHeight: 300,
+                            borderRadius: BorderRadius.circular(16),
+                            hint: const Padding(
+                              padding: EdgeInsets.only(left: 4),
+                              child: Row(
+                                children: [
+                                  Icon(Icons.location_on_outlined, color: Color(0xFF9CA3AF), size: 20),
+                                  SizedBox(width: 12),
+                                  Text('Select location', style: TextStyle(color: Color(0xFF9CA3AF), fontSize: 15)),
+                                ],
+                              ),
+                            ),
+                            selectedItemBuilder: (BuildContext context) {
+                              return _locations.map((String location) {
+                                return Padding(
+                                  padding: const EdgeInsets.only(left: 4),
+                                  child: Row(
+                                    children: [
+                                      const Icon(Icons.location_on, color: Color(0xFFE31E24), size: 20),
+                                      const SizedBox(width: 12),
+                                      Expanded(
+                                        child: Text(
+                                          location,
+                                          style: const TextStyle(
+                                            color: Color(0xFF374151),
+                                            fontSize: 15,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }).toList();
+                            },
+                            icon: const Padding(
+                              padding: EdgeInsets.only(right: 4),
+                              child: Icon(Icons.keyboard_arrow_down_rounded, color: Color(0xFF6B7280)),
+                            ),
+                            dropdownColor: Colors.white,
+                            elevation: 8,
+                            items: _locations.map((String location) {
+                              return DropdownMenuItem<String>(
+                                value: location,
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.location_on, color: Color(0xFFE31E24), size: 18),
+                                    const SizedBox(width: 12),
+                                    Expanded(
+                                      child: Text(
+                                        location,
+                                        style: const TextStyle(
+                                          color: Color(0xFF374151),
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w500,
+                                        ),
                                       ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  _fromDate != null
-                                      ? DateFormat('hh:mm a').format(_fromDate!)
-                                      : 'Time',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
+                              );
+                            }).toList(),
+                            onChanged: (String? newValue) {
+                              setState(() {
+                                _selectedLocation = newValue;
+                              });
+                            },
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Guests',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF374151),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+                      ),
+                      padding: const EdgeInsets.all(18),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.person_outline_rounded, color: Color(0xFFE31E24), size: 20),
+                                  SizedBox(width: 10),
+                                  Text(
+                                    'Adults',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF374151),
+                                    ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: _adults > 1 ? const Color(0xFFE31E24) : const Color(0xFFE5E7EB),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: IconButton(
+                                      onPressed: () {
+                                        if (_adults > 1) {
+                                          setState(() {
+                                            _adults--;
+                                          });
+                                        }
+                                      },
+                                      icon: const Icon(Icons.remove_rounded, color: Colors.white, size: 18),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 45,
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '$_adults',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1F2937),
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFE31E24),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: IconButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _adults++;
+                                        });
+                                      },
+                                      icon: const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const Padding(
+                            padding: EdgeInsets.symmetric(vertical: 12),
+                            child: Divider(height: 1),
+                          ),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              const Row(
+                                children: [
+                                  Icon(Icons.child_care_rounded, color: Color(0xFFE31E24), size: 20),
+                                  SizedBox(width: 10),
+                                  Text(
+                                    'Children',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w500,
+                                      color: Color(0xFF374151),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                              Row(
+                                children: [
+                                  Container(
+                                    decoration: BoxDecoration(
+                                      color: _children > 0 ? const Color(0xFFE31E24) : const Color(0xFFE5E7EB),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: IconButton(
+                                      onPressed: () {
+                                        if (_children > 0) {
+                                          setState(() {
+                                            _children--;
+                                          });
+                                        }
+                                      },
+                                      icon: const Icon(Icons.remove_rounded, color: Colors.white, size: 18),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                    ),
+                                  ),
+                                  Container(
+                                    width: 45,
+                                    alignment: Alignment.center,
+                                    child: Text(
+                                      '$_children',
+                                      style: const TextStyle(
+                                        fontSize: 18,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1F2937),
+                                      ),
+                                    ),
+                                  ),
+                                  Container(
+                                    decoration: const BoxDecoration(
+                                      color: Color(0xFFE31E24),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: IconButton(
+                                      onPressed: () {
+                                        setState(() {
+                                          _children++;
+                                        });
+                                      },
+                                      icon: const Icon(Icons.add_rounded, color: Colors.white, size: 18),
+                                      padding: EdgeInsets.zero,
+                                      constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Check-in & Check-out',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF374151),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: _selectFromDate,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+                              ),
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.login_rounded, size: 18, color: Color(0xFFE31E24)),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _fromDate != null
+                                            ? DateFormat('dd MMM').format(_fromDate!)
+                                            : 'Check-in',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: _fromDate != null ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _fromDate != null ? DateFormat('hh:mm a').format(_fromDate!) : 'Select time',
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: GestureDetector(
+                            onTap: _selectToDate,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                color: Colors.white,
+                                borderRadius: BorderRadius.circular(16),
+                                border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+                              ),
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.logout_rounded, size: 18, color: Color(0xFFE31E24)),
+                                      const SizedBox(width: 8),
+                                      Text(
+                                        _toDate != null
+                                            ? DateFormat('dd MMM').format(_toDate!)
+                                            : 'Check-out',
+                                        style: TextStyle(
+                                          fontSize: 14,
+                                          fontWeight: FontWeight.w600,
+                                          color: _toDate != null ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    _toDate != null ? DateFormat('hh:mm a').format(_toDate!) : 'Select time',
+                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                                  ),
+                                ],
+                              ),
                             ),
                           ),
                         ),
                       ],
                     ),
-                  ),
-                  const SizedBox(width: 15),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Check-out',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.black87,
-                          ),
+                    if (hours > 0) ...[
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF5F5),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: const Color(0xFFFFE4E6), width: 1.5),
                         ),
-                        const SizedBox(height: 10),
-                        GestureDetector(
-                          onTap: _selectToDate,
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: Colors.grey[50],
-                              borderRadius: BorderRadius.circular(15),
-                              border: Border.all(color: Colors.grey[200]!),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFFE31E24).withOpacity(0.1),
+                                borderRadius: BorderRadius.circular(8),
+                              ),
+                              child: const Icon(Icons.schedule_rounded, color: Color(0xFFE31E24), size: 18),
                             ),
-                            padding: const EdgeInsets.all(15),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(
-                                      Icons.calendar_today,
-                                      size: 18,
-                                      color: Color(0xFFE31E24),
-                                    ),
-                                    const SizedBox(width: 8),
-                                    Text(
-                                      _toDate != null
-                                          ? DateFormat('dd MMM').format(_toDate!)
-                                          : 'Date',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        fontWeight: FontWeight.w600,
-                                        color: _toDate != null
-                                            ? Colors.black87
-                                            : Colors.grey,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                                const SizedBox(height: 5),
-                                Text(
-                                  _toDate != null
-                                      ? DateFormat('hh:mm a').format(_toDate!)
-                                      : 'Time',
-                                  style: TextStyle(
-                                    fontSize: 12,
-                                    color: Colors.grey[600],
-                                  ),
-                                ),
-                              ],
+                            const SizedBox(width: 12),
+                            Text(
+                              'Duration: $hours hour${hours > 1 ? 's' : ''}',
+                              style: const TextStyle(
+                                color: Color(0xFFE31E24),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
                             ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              if (hours > 0) ...[
-                const SizedBox(height: 15),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFE31E24).withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.access_time,
-                        color: Color(0xFFE31E24),
-                        size: 20,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        'Total Duration: $hours hour${hours > 1 ? 's' : ''}',
-                        style: const TextStyle(
-                          color: Color(0xFFE31E24),
-                          fontWeight: FontWeight.w600,
-                          fontSize: 14,
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 30),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: ElevatedButton(
-                  onPressed: _searchProperties,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFE31E24),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(15),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: const Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.search, size: 24),
-                      SizedBox(width: 10),
-                      Text(
-                        'Search Properties',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 56,
+                      child: ElevatedButton(
+                        onPressed: _searchProperties,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE31E24),
+                          foregroundColor: Colors.white,
+                          shadowColor: const Color(0xFFE31E24).withOpacity(0.3),
+                          elevation: 4,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(16),
+                          ),
+                        ),
+                        child: const Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(Icons.search_rounded, size: 22),
+                            SizedBox(width: 10),
+                            Text(
+                              'Search Properties',
+                              style: TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.2,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 20),
+          ],
         ),
       ),
     );

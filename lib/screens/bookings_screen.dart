@@ -7,15 +7,23 @@ class BookingsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFFF8F9FA),
       appBar: AppBar(
         elevation: 0,
         backgroundColor: Colors.white,
         title: const Text(
           'My Bookings',
           style: TextStyle(
-            color: Colors.black87,
+            color: Color(0xFF1A1A1A),
             fontWeight: FontWeight.bold,
+            fontSize: 22,
+          ),
+        ),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(
+            height: 1,
+            color: Colors.grey[200],
           ),
         ),
       ),
@@ -23,15 +31,27 @@ class BookingsScreen extends StatelessWidget {
         length: 3,
         child: Column(
           children: [
-            TabBar(
-              labelColor: const Color(0xFFE31E24),
-              unselectedLabelColor: Colors.grey,
-              indicatorColor: const Color(0xFFE31E24),
-              tabs: const [
-                Tab(text: 'Upcoming'),
-                Tab(text: 'Completed'),
-                Tab(text: 'Cancelled'),
-              ],
+            Container(
+              color: Colors.white,
+              child: TabBar(
+                labelColor: const Color(0xFFE31E24),
+                unselectedLabelColor: const Color(0xFF6B7280),
+                indicatorColor: const Color(0xFFE31E24),
+                indicatorWeight: 3,
+                labelStyle: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 15,
+                ),
+                unselectedLabelStyle: const TextStyle(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+                tabs: const [
+                  Tab(text: 'Upcoming'),
+                  Tab(text: 'Completed'),
+                  Tab(text: 'Cancelled'),
+                ],
+              ),
             ),
             Expanded(
               child: TabBarView(
@@ -56,17 +76,33 @@ class BookingsScreen extends StatelessWidget {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(
-              Icons.bookmark_border,
-              size: 80,
-              color: Colors.grey[300],
+            Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.event_note_outlined,
+                size: 60,
+                color: Colors.grey[400],
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
             Text(
               'No ${status} bookings',
-              style: TextStyle(
-                fontSize: 18,
+              style: const TextStyle(
+                fontSize: 20,
                 fontWeight: FontWeight.w600,
+                color: Color(0xFF1A1A1A),
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              'Your ${status} bookings will appear here',
+              style: TextStyle(
+                fontSize: 14,
                 color: Colors.grey[600],
               ),
             ),
@@ -76,139 +112,183 @@ class BookingsScreen extends StatelessWidget {
     }
 
     return ListView.builder(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(16),
       itemCount: mockBookings.length,
       itemBuilder: (context, index) {
         final booking = mockBookings[index];
         return Container(
-          margin: const EdgeInsets.only(bottom: 15),
+          margin: const EdgeInsets.only(bottom: 16),
           decoration: BoxDecoration(
             color: Colors.white,
-            borderRadius: BorderRadius.circular(15),
+            borderRadius: BorderRadius.circular(16),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.05),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
               ),
             ],
           ),
-          child: Padding(
-            padding: const EdgeInsets.all(15),
+          child: ClipRRect(
+            borderRadius: BorderRadius.circular(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFE31E24).withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        booking['icon'] as IconData,
-                        color: const Color(0xFFE31E24),
-                        size: 30,
-                      ),
+                // Header with gradient background
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      colors: [
+                        _getStatusColor(status).withOpacity(0.1),
+                        _getStatusColor(status).withOpacity(0.05),
+                      ],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
-                    const SizedBox(width: 15),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            booking['name'] as String,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.black87,
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 56,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: _getStatusColor(status).withOpacity(0.2),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            booking['location'] as String,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[600],
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 10,
-                        vertical: 5,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _getStatusColor(status).withOpacity(0.2),
-                        borderRadius: BorderRadius.circular(8),
-                      ),
-                      child: Text(
-                        status.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 11,
-                          fontWeight: FontWeight.bold,
+                          ],
+                        ),
+                        child: Icon(
+                          booking['icon'] as IconData,
                           color: _getStatusColor(status),
+                          size: 28,
                         ),
                       ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 15),
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.grey[50],
-                    borderRadius: BorderRadius.circular(10),
+                      const SizedBox(width: 14),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              booking['name'] as String,
+                              style: const TextStyle(
+                                fontSize: 17,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A1A1A),
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                Icon(
+                                  Icons.location_on,
+                                  size: 14,
+                                  color: Colors.grey[600],
+                                ),
+                                const SizedBox(width: 4),
+                                Expanded(
+                                  child: Text(
+                                    booking['location'] as String,
+                                    style: TextStyle(
+                                      fontSize: 13,
+                                      color: Colors.grey[600],
+                                    ),
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 6,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _getStatusColor(status),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          _getStatusText(status),
+                          style: const TextStyle(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white,
+                            letterSpacing: 0.5,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
+                ),
+                
+                // Booking details
+                Padding(
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     children: [
                       Row(
                         children: [
-                          Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                          const SizedBox(width: 8),
-                          Text(
-                            booking['date'] as String,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[700],
+                          Expanded(
+                            child: _buildInfoItem(
+                              Icons.calendar_today_outlined,
+                              'Date',
+                              booking['date'] as String,
                             ),
                           ),
-                          const Spacer(),
-                          Icon(Icons.access_time, size: 16, color: Colors.grey[600]),
-                          const SizedBox(width: 8),
-                          Text(
-                            booking['duration'] as String,
-                            style: TextStyle(
-                              fontSize: 13,
-                              color: Colors.grey[700],
+                          Container(
+                            width: 1,
+                            height: 40,
+                            color: Colors.grey[200],
+                          ),
+                          Expanded(
+                            child: _buildInfoItem(
+                              Icons.access_time_outlined,
+                              'Duration',
+                              booking['duration'] as String,
                             ),
                           ),
                         ],
                       ),
-                      const Divider(height: 20),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Text(
-                            'Total Amount',
-                            style: TextStyle(
-                              fontSize: 14,
-                              fontWeight: FontWeight.w600,
-                            ),
+                      const SizedBox(height: 16),
+                      Container(
+                        padding: const EdgeInsets.all(14),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFF8F9FA),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(
+                            color: Colors.grey[200]!,
+                            width: 1,
                           ),
-                          Text(
-                            booking['price'] as String,
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFFE31E24),
+                        ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Total Amount',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6B7280),
+                              ),
                             ),
-                          ),
-                        ],
+                            Text(
+                              booking['price'] as String,
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFE31E24),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -221,16 +301,63 @@ class BookingsScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildInfoItem(IconData icon, String label, String value) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 8),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          Icon(
+            icon,
+            size: 20,
+            color: const Color(0xFF6B7280),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            value,
+            style: const TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: Color(0xFF1A1A1A),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  String _getStatusText(String status) {
+    switch (status) {
+      case 'upcoming':
+        return 'UPCOMING';
+      case 'completed':
+        return 'COMPLETED';
+      case 'cancelled':
+        return 'CANCELLED';
+      default:
+        return status.toUpperCase();
+    }
+  }
+
   Color _getStatusColor(String status) {
     switch (status) {
       case 'upcoming':
-        return Colors.blue;
+        return const Color(0xFF3B82F6); // Blue
       case 'completed':
-        return Colors.green;
+        return const Color(0xFF10B981); // Green
       case 'cancelled':
-        return Colors.red;
+        return const Color(0xFFEF4444); // Red
       default:
-        return Colors.grey;
+        return const Color(0xFF6B7280); // Gray
     }
   }
 
@@ -243,7 +370,7 @@ class BookingsScreen extends StatelessWidget {
           'date': '15 Nov 2024',
           'duration': '12 hours',
           'price': '₹7,080',
-          'icon': Icons.beach_access,
+          'icon': Icons.beach_access_outlined,
         },
         {
           'name': 'Mountain Paradise Resort',
@@ -251,7 +378,7 @@ class BookingsScreen extends StatelessWidget {
           'date': '20 Nov 2024',
           'duration': '24 hours',
           'price': '₹12,744',
-          'icon': Icons.landscape,
+          'icon': Icons.landscape_outlined,
         },
       ];
     } else if (status == 'completed') {
@@ -262,7 +389,7 @@ class BookingsScreen extends StatelessWidget {
           'date': '10 Oct 2024',
           'duration': '6 hours',
           'price': '₹2,124',
-          'icon': Icons.hotel,
+          'icon': Icons.hotel_outlined,
         },
       ];
     }
