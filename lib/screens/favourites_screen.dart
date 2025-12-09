@@ -169,7 +169,7 @@ class _FavoritesScreenState extends State<FavoritesScreen> {
                                     Navigator.push(
                                       context,
                                       MaterialPageRoute(
-                                        builder: (context) => PropertyDetailScreen(
+                                        builder: (context) => EnhancedPropertyDetailScreen(
                                           property: property,
                                           fromDate: DateTime.now(),
                                           toDate: DateTime.now().add(const Duration(hours: 6)),

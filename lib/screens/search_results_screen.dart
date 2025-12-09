@@ -316,7 +316,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => PropertyDetailScreen(
+                                  builder: (context) => EnhancedPropertyDetailScreen(
                                     property: property,
                                     fromDate: widget.fromDate,
                                     toDate: widget.toDate,
@@ -517,7 +517,7 @@ class _SearchResultsScreenState extends State<SearchResultsScreen> {
                                                   Navigator.push(
                                                     context,
                                                     MaterialPageRoute(
-                                                      builder: (context) => PropertyDetailScreen(
+                                                      builder: (context) => EnhancedPropertyDetailScreen(
                                                         property: property,
                                                         fromDate: widget.fromDate,
                                                         toDate: widget.toDate,

@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../models/property_model.dart';
+import '../models/booking_model.dart';
+import '../utils/booking_manager.dart';
+import 'dart:math';
 
-class PropertyDetailScreen extends StatefulWidget {
+class EnhancedPropertyDetailScreen extends StatefulWidget {
   final Property property;
   final DateTime fromDate;
   final DateTime toDate;
@@ -11,7 +14,7 @@ class PropertyDetailScreen extends StatefulWidget {
   final int adults;
   final int children;
 
-  const PropertyDetailScreen({
+  const EnhancedPropertyDetailScreen({
     super.key,
     required this.property,
     required this.fromDate,
@@ -22,16 +25,15 @@ class PropertyDetailScreen extends StatefulWidget {
   });
 
   @override
-  State<PropertyDetailScreen> createState() => _PropertyDetailScreenState();
+  State<EnhancedPropertyDetailScreen> createState() => _EnhancedPropertyDetailScreenState();
 }
 
-class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
+class _EnhancedPropertyDetailScreenState extends State<EnhancedPropertyDetailScreen> {
   late Razorpay _razorpay;
   final TextEditingController _nameController = TextEditingController();
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
 
-  // TODO: Replace with your correct Razorpay key
   static const String _razorpayKey = 'rzp_live_RmFBaLmTDh2VJ6';
 
   @override
@@ -65,110 +67,171 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   }
 
   void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    Navigator.pop(context); // Close the dialog
+    Navigator.pop(context); // Close payment dialog
+
+    // Create booking
+    final booking = BookingModel(
+      id: 'BK${DateTime.now().millisecondsSinceEpoch}',
+      property: widget.property,
+      fromDate: widget.fromDate,
+      toDate: widget.toDate,
+      adults: widget.adults,
+      children: widget.children,
+      hours: widget.hours,
+      totalPrice: _calculateTotalPrice(),
+      status: 'upcoming',
+      bookingDate: DateTime.now(),
+      guestName: _nameController.text,
+      guestEmail: _emailController.text,
+      guestPhone: _phoneController.text,
+      paymentId: response.paymentId,
+    );
+
+    // Save booking
+    BookingManager().addBooking(booking);
+
+    // Show success dialog
+    _showSuccessDialog(response);
+  }
+
+  void _showSuccessDialog(PaymentSuccessResponse response) {
     showDialog(
       context: context,
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
-        title: const Row(
-          children: [
-            Icon(Icons.check_circle, color: Colors.green, size: 28),
-            SizedBox(width: 10),
-            Text('Payment Successful'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              'Your booking has been confirmed!',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 15),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.grey[100],
-                borderRadius: BorderRadius.circular(10),
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+        child: Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: 80,
+                height: 80,
+                decoration: BoxDecoration(
+                  color: Colors.green.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: const Icon(Icons.check_circle, color: Colors.green, size: 50),
               ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    'Payment ID',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    response.paymentId ?? 'N/A',
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                  if (response.orderId != null) ...[
-                    const SizedBox(height: 10),
-                    Text(
-                      'Order ID',
-                      style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      response.orderId!,
-                      style: const TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w600,
-                      ),
+              const SizedBox(height: 20),
+              const Text(
+                'Payment Successful!',
+                style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Your booking has been confirmed',
+                style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 24),
+              Container(
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.grey[50],
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Column(
+                  children: [
+                    _buildInfoRow('Property', widget.property.name),
+                    const Divider(height: 20),
+                    _buildInfoRow('Check-in', DateFormat('dd MMM, hh:mm a').format(widget.fromDate)),
+                    const Divider(height: 20),
+                    _buildInfoRow('Payment ID', response.paymentId ?? 'N/A'),
+                    const Divider(height: 20),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text('Total Paid', style: TextStyle(fontWeight: FontWeight.w600)),
+                        Text(
+                          '₹${_calculateTotalPrice().toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFE31E24),
+                          ),
+                        ),
+                      ],
                     ),
                   ],
+                ),
+              ),
+              const SizedBox(height: 24),
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.popUntil(context, (route) => route.isFirst);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        side: BorderSide(color: Colors.grey[300]!),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('Home'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: ElevatedButton(
+                      onPressed: () {
+                        Navigator.popUntil(context, (route) => route.isFirst);
+                        // Navigate to bookings tab (index 1)
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFFE31E24),
+                        foregroundColor: Colors.white,
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      child: const Text('View Booking'),
+                    ),
+                  ),
                 ],
               ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () {
-              Navigator.popUntil(context, (route) => route.isFirst);
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE31E24),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 30,
-                vertical: 12,
-              ),
-            ),
-            child: const Text('Done'),
+            ],
           ),
-        ],
+        ),
       ),
     );
   }
 
+  Widget _buildInfoRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: 13, color: Colors.grey[600])),
+        Flexible(
+          child: Text(
+            value,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+            textAlign: TextAlign.right,
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+      ],
+    );
+  }
+
   void _handlePaymentError(PaymentFailureResponse response) {
-    Navigator.pop(context); // Close the dialog
+    Navigator.pop(context);
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('Payment Failed: ${response.message ?? 'Unknown error'}'),
+        content: Row(
+          children: [
+            const Icon(Icons.error_outline, color: Colors.white),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Text('Payment Failed: ${response.message ?? 'Unknown error'}'),
+            ),
+          ],
+        ),
         backgroundColor: Colors.red,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
         duration: const Duration(seconds: 4),
       ),
     );
@@ -177,12 +240,10 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   void _handleExternalWallet(ExternalWalletResponse response) {
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
-        content: Text('External Wallet: ${response.walletName ?? 'Unknown'}'),
+        content: Text('Selected: ${response.walletName ?? 'External Wallet'}'),
         backgroundColor: Colors.blue,
         behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(10),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
   }
@@ -190,19 +251,38 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
   void _openCheckout() {
     var options = {
       'key': _razorpayKey,
-      'amount': (_calculateTotalPrice() * 100).toInt(), // Amount in paise
+      'amount': (_calculateTotalPrice() * 100).toInt(),
       'name': 'SSH Hotels',
       'description': 'Booking at ${widget.property.name}',
       'prefill': {
         'contact': _phoneController.text,
         'email': _emailController.text,
+        'name': _nameController.text,
       },
-      'theme': {
-        'color': '#E31E24'
+      'theme': {'color': '#E31E24'},
+      'method': {
+        'upi': true,
+        'card': true,
+        'netbanking': true,
+        'wallet': true,
       },
-      'external': {
-        'wallets': ['paytm', 'phonepe', 'googlepay']
-      }
+      'config': {
+        'display': {
+          'blocks': {
+            'banks': {
+              'name': 'Pay using UPI',
+              'instruments': [
+                {
+                  'method': 'upi',
+                  'flows': ['qr', 'intent', 'collect'],
+                }
+              ],
+            }
+          },
+          'sequence': ['block.banks'],
+          'preferences': {'show_default_blocks': true},
+        }
+      },
     };
 
     try {
@@ -218,219 +298,275 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
     }
   }
 
-  void _bookNow(BuildContext context) {
-    showDialog(
+  void _showPaymentSheet(BuildContext context) {
+    showModalBottomSheet(
       context: context,
-      builder: (context) => AlertDialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => Container(
+        height: MediaQuery.of(context).size.height * 0.75,
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        title: const Row(
+        child: Column(
           children: [
-            Icon(Icons.person, color: Color(0xFFE31E24), size: 28),
-            SizedBox(width: 10),
-            Text('Enter Your Details'),
-          ],
-        ),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TextField(
-                controller: _nameController,
-                decoration: InputDecoration(
-                  labelText: 'Full Name',
-                  prefixIcon: const Icon(Icons.person_outline),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
+            Container(
+              margin: const EdgeInsets.only(top: 12),
+              width: 40,
+              height: 4,
+              decoration: BoxDecoration(
+                color: Colors.grey[300],
+                borderRadius: BorderRadius.circular(2),
               ),
-              const SizedBox(height: 15),
-              TextField(
-                controller: _emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  labelText: 'Email',
-                  prefixIcon: const Icon(Icons.email_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 15),
-              TextField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                maxLength: 10,
-                decoration: InputDecoration(
-                  labelText: 'Phone Number',
-                  prefixIcon: const Icon(Icons.phone_outlined),
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16,
-                    vertical: 12,
-                  ),
-                  counterText: '',
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                padding: const EdgeInsets.all(15),
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE31E24).withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                ),
+            ),
+            Expanded(
+              child: SingleChildScrollView(
+                padding: const EdgeInsets.all(24),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      widget.property.name,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.bold,
-                      ),
+                    const Text(
+                      'Enter Guest Details',
+                      style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      '${DateFormat('dd MMM, hh:mm a').format(widget.fromDate)}\nto\n${DateFormat('dd MMM, hh:mm a').format(widget.toDate)}',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[700],
-                        height: 1.5,
+                      'We need these details for your booking',
+                      style: TextStyle(fontSize: 14, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 24),
+                    _buildTextField(
+                      controller: _nameController,
+                      label: 'Full Name',
+                      icon: Icons.person_outline,
+                      hint: 'Enter your full name',
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      controller: _emailController,
+                      label: 'Email Address',
+                      icon: Icons.email_outlined,
+                      hint: 'your.email@example.com',
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 16),
+                    _buildTextField(
+                      controller: _phoneController,
+                      label: 'Phone Number',
+                      icon: Icons.phone_outlined,
+                      hint: '10-digit mobile number',
+                      keyboardType: TextInputType.phone,
+                      maxLength: 10,
+                      prefix: '+91 ',
+                    ),
+                    const SizedBox(height: 24),
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [
+                            const Color(0xFFE31E24).withOpacity(0.1),
+                            const Color(0xFFE31E24).withOpacity(0.05),
+                          ],
+                        ),
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: const Color(0xFFE31E24).withOpacity(0.2)),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            children: [
+                              Container(
+                                width: 50,
+                                height: 50,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(
+                                  widget.property.type == 'Resort'
+                                      ? Icons.beach_access
+                                      : widget.property.type == 'Co-Living'
+                                          ? Icons.apartment
+                                          : Icons.hotel,
+                                  color: const Color(0xFFE31E24),
+                                ),
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      widget.property.name,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    Text(
+                                      widget.property.location,
+                                      style: TextStyle(fontSize: 12, color: Colors.grey[600]),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 16),
+                          const Divider(),
+                          const SizedBox(height: 12),
+                          _buildPriceRow('Base Price', '₹${_calculateBasePrice().toStringAsFixed(0)}'),
+                          const SizedBox(height: 8),
+                          _buildPriceRow('GST (18%)', '₹${_calculateGST().toStringAsFixed(0)}'),
+                          const SizedBox(height: 12),
+                          Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                const Text(
+                                  'Total Amount',
+                                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                                ),
+                                Text(
+                                  '₹${_calculateTotalPrice().toStringAsFixed(0)}',
+                                  style: const TextStyle(
+                                    fontSize: 22,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFFE31E24),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
                     ),
-                    const SizedBox(height: 12),
-                    const Divider(),
-                    const SizedBox(height: 8),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        const Text(
-                          'Total Amount',
-                          style: TextStyle(
-                            fontWeight: FontWeight.w600,
-                            fontSize: 16,
-                          ),
+                    const SizedBox(height: 24),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 54,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          if (_validateInputs()) {
+                            _openCheckout();
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFFE31E24),
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                          elevation: 0,
                         ),
-                        Text(
-                          '₹${_calculateTotalPrice().toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFE31E24),
-                          ),
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.lock_outline, size: 20),
+                            const SizedBox(width: 8),
+                            Text(
+                              'Proceed to Pay ₹${_calculateTotalPrice().toStringAsFixed(0)}',
+                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                          ],
                         ),
-                      ],
+                      ),
                     ),
                   ],
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text(
-              'Cancel',
-              style: TextStyle(color: Colors.grey),
-            ),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (_nameController.text.isEmpty ||
-                  _emailController.text.isEmpty ||
-                  _phoneController.text.isEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please fill all details'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              if (_phoneController.text.length != 10) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a valid 10-digit phone number'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              if (!_emailController.text.contains('@')) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text('Please enter a valid email'),
-                    backgroundColor: Colors.red,
-                  ),
-                );
-                return;
-              }
-
-              _openCheckout();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFE31E24),
-              foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-              padding: const EdgeInsets.symmetric(
-                horizontal: 24,
-                vertical: 12,
-              ),
-            ),
-            child: const Text('Proceed to Pay'),
-          ),
-        ],
       ),
     );
   }
 
-  Widget _buildDetailRow(IconData icon, String label, String value) {
-    return Row(
+  Widget _buildTextField({
+    required TextEditingController controller,
+    required String label,
+    required IconData icon,
+    required String hint,
+    TextInputType? keyboardType,
+    int? maxLength,
+    String? prefix,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Icon(icon, size: 20, color: const Color(0xFFE31E24)),
-        const SizedBox(width: 12),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                label,
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.grey[600],
-                ),
-              ),
-              const SizedBox(height: 2),
-              Text(
-                value,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.black87,
-                ),
-              ),
-            ],
+        Text(
+          label,
+          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600),
+        ),
+        const SizedBox(height: 8),
+        TextField(
+          controller: controller,
+          keyboardType: keyboardType,
+          maxLength: maxLength,
+          decoration: InputDecoration(
+            hintText: hint,
+            prefixIcon: Icon(icon, color: const Color(0xFFE31E24)),
+            prefix: prefix != null ? Text(prefix) : null,
+            counterText: '',
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            enabledBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: BorderSide(color: Colors.grey[300]!),
+            ),
+            focusedBorder: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(12),
+              borderSide: const BorderSide(color: Color(0xFFE31E24), width: 2),
+            ),
+            filled: true,
+            fillColor: Colors.grey[50],
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildPriceRow(String label, String amount) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(fontSize: 14, color: Colors.grey[700])),
+        Text(amount, style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600)),
+      ],
+    );
+  }
+
+  bool _validateInputs() {
+    if (_nameController.text.trim().isEmpty) {
+      _showError('Please enter your full name');
+      return false;
+    }
+    if (_emailController.text.trim().isEmpty || !_emailController.text.contains('@')) {
+      _showError('Please enter a valid email address');
+      return false;
+    }
+    if (_phoneController.text.length != 10) {
+      _showError('Please enter a valid 10-digit phone number');
+      return false;
+    }
+    return true;
+  }
+
+  void _showError(String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
     );
   }
 
@@ -446,10 +582,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
             backgroundColor: const Color(0xFFE31E24),
             leading: Container(
               margin: const EdgeInsets.all(8),
-              decoration: const BoxDecoration(
-                color: Colors.white,
-                shape: BoxShape.circle,
-              ),
+              decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
               child: IconButton(
                 icon: const Icon(Icons.arrow_back, color: Colors.black87),
                 onPressed: () => Navigator.pop(context),
@@ -458,12 +591,9 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
             actions: [
               Container(
                 margin: const EdgeInsets.all(8),
-                decoration: const BoxDecoration(
-                  color: Colors.white,
-                  shape: BoxShape.circle,
-                ),
+                decoration: const BoxDecoration(color: Colors.white, shape: BoxShape.circle),
                 child: IconButton(
-                  icon: const Icon(Icons.favorite_border, color: Color(0xFFE31E24)),
+                  icon: const Icon(Icons.share, color: Colors.black87),
                   onPressed: () {},
                 ),
               ),
@@ -503,10 +633,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       Row(
                         children: [
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: const Color(0xFFE31E24).withOpacity(0.1),
                               borderRadius: BorderRadius.circular(8),
@@ -522,10 +649,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                           ),
                           const Spacer(),
                           Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 12,
-                              vertical: 6,
-                            ),
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: Colors.amber.withOpacity(0.2),
                               borderRadius: BorderRadius.circular(8),
@@ -536,10 +660,7 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                                 const SizedBox(width: 4),
                                 Text(
                                   widget.property.rating.toString(),
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
+                                  style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black87),
                                 ),
                               ],
                             ),
@@ -549,34 +670,20 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                       const SizedBox(height: 15),
                       Text(
                         widget.property.name,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                        style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Colors.black87),
                       ),
                       const SizedBox(height: 8),
                       Row(
                         children: [
                           Icon(Icons.location_on, size: 18, color: Colors.grey[600]),
                           const SizedBox(width: 5),
-                          Text(
-                            widget.property.location,
-                            style: TextStyle(
-                              fontSize: 14,
-                              color: Colors.grey[600],
-                            ),
-                          ),
+                          Text(widget.property.location, style: TextStyle(fontSize: 14, color: Colors.grey[600])),
                         ],
                       ),
                       const SizedBox(height: 15),
                       Text(
                         widget.property.description,
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[700],
-                          height: 1.5,
-                        ),
+                        style: TextStyle(fontSize: 14, color: Colors.grey[700], height: 1.5),
                       ),
                     ],
                   ),
@@ -588,179 +695,29 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Booking Details',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
+                        'Booking Summary',
+                        style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
                       ),
-                      const SizedBox(height: 15),
-                      _buildDetailRow(
-                        Icons.calendar_today,
-                        'Check-in',
-                        DateFormat('dd MMM yyyy, hh:mm a').format(widget.fromDate),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildDetailRow(
-                        Icons.calendar_today,
-                        'Check-out',
-                        DateFormat('dd MMM yyyy, hh:mm a').format(widget.toDate),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildDetailRow(
-                        Icons.access_time,
-                        'Duration',
-                        '${widget.hours} hour${widget.hours > 1 ? 's' : ''}',
-                      ),
-                      const SizedBox(height: 12),
-                      _buildDetailRow(
-                        Icons.people,
-                        'Guests',
-                        '${widget.adults} Adult${widget.adults > 1 ? 's' : ''}${widget.children > 0 ? ', ${widget.children} Child${widget.children > 1 ? 'ren' : ''}' : ''}',
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Amenities',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 15),
-                      Wrap(
-                        spacing: 10,
-                        runSpacing: 10,
-                        children: widget.property.amenities.map((amenity) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 15,
-                              vertical: 10,
-                            ),
-                            decoration: BoxDecoration(
-                              color: Colors.grey[100],
-                              borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.grey[300]!),
-                            ),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                const Icon(
-                                  Icons.check_circle,
-                                  size: 16,
-                                  color: Color(0xFFE31E24),
-                                ),
-                                const SizedBox(width: 8),
-                                Text(
-                                  amenity,
-                                  style: const TextStyle(
-                                    fontSize: 13,
-                                    fontWeight: FontWeight.w500,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          );
-                        }).toList(),
-                      ),
-                    ],
-                  ),
-                ),
-                const Divider(height: 1),
-                Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Price Breakdown',
-                        style: TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.black87,
-                        ),
-                      ),
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 16),
                       Container(
-                        padding: const EdgeInsets.all(15),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: Colors.grey[50],
-                          borderRadius: BorderRadius.circular(15),
+                          borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: Colors.grey[200]!),
                         ),
                         child: Column(
                           children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  '₹${widget.property.pricePerHour} × ${widget.hours} hours',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                                Text(
-                                  '₹${_calculateBasePrice().toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 10),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  'GST (18%)',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    color: Colors.grey[700],
-                                  ),
-                                ),
-                                Text(
-                                  '₹${_calculateGST().toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.w600,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const Divider(height: 20),
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Total',
-                                  style: TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Colors.black87,
-                                  ),
-                                ),
-                                Text(
-                                  '₹${_calculateTotalPrice().toStringAsFixed(0)}',
-                                  style: const TextStyle(
-                                    fontSize: 20,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFFE31E24),
-                                  ),
-                                ),
-                              ],
+                            _buildDetailRow(Icons.login, 'Check-in', DateFormat('dd MMM, hh:mm a').format(widget.fromDate)),
+                            const Divider(height: 24),
+                            _buildDetailRow(Icons.logout, 'Check-out', DateFormat('dd MMM, hh:mm a').format(widget.toDate)),
+                            const Divider(height: 24),
+                            _buildDetailRow(Icons.access_time, 'Duration', '${widget.hours} hour${widget.hours > 1 ? 's' : ''}'),
+                            const Divider(height: 24),
+                            _buildDetailRow(
+                              Icons.people,
+                              'Guests',
+                              '${widget.adults} Adult${widget.adults > 1 ? 's' : ''}${widget.children > 0 ? ', ${widget.children} Child${widget.children > 1 ? 'ren' : ''}' : ''}',
                             ),
                           ],
                         ),
@@ -787,30 +744,71 @@ class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
           ],
         ),
         child: SafeArea(
-          child: SizedBox(
-            width: double.infinity,
-            height: 56,
-            child: ElevatedButton(
-              onPressed: () => _bookNow(context),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE31E24),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(15),
-                ),
-                elevation: 0,
+          child: Row(
+            children: [
+              Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('Total Amount', style: TextStyle(fontSize: 12, color: Colors.grey[600])),
+                  Text(
+                    '₹${_calculateTotalPrice().toStringAsFixed(0)}',
+                    style: const TextStyle(fontSize: 24, fontWeight: FontWeight.bold, color: Color(0xFFE31E24)),
+                  ),
+                ],
               ),
-              child: Text(
-                'Book Now - ₹${_calculateTotalPrice().toStringAsFixed(0)}',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
+              const SizedBox(width: 20),
+              Expanded(
+                child: SizedBox(
+                  height: 56,
+                  child: ElevatedButton(
+                    onPressed: () => _showPaymentSheet(context),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFFE31E24),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                      elevation: 0,
+                    ),
+                    child: const Text('Continue', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  ),
                 ),
               ),
-            ),
+            ],
           ),
         ),
       ),
+    );
+  }
+
+  Widget _buildDetailRow(IconData icon, String label, String value) {
+    return Row(
+      children: [
+        Icon(icon, size: 20, color: const Color(0xFFE31E24)),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                label,
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Colors.grey[600],
+                ),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                value,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.black87,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 }
