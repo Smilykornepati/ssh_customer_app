@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../models/property_model.dart';
 
-class PropertyDetailScreen extends StatelessWidget {
+class PropertyDetailScreen extends StatefulWidget {
   final Property property;
   final DateTime fromDate;
   final DateTime toDate;
@@ -20,8 +21,39 @@ class PropertyDetailScreen extends StatelessWidget {
     required this.children,
   });
 
+  @override
+  State<PropertyDetailScreen> createState() => _PropertyDetailScreenState();
+}
+
+class _PropertyDetailScreenState extends State<PropertyDetailScreen> {
+  late Razorpay _razorpay;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
+  final TextEditingController _phoneController = TextEditingController();
+
+  // TODO: Replace with your correct Razorpay key
+  static const String _razorpayKey = 'rzp_live_RmFBaLmTDh2VJ6';
+
+  @override
+  void initState() {
+    super.initState();
+    _razorpay = Razorpay();
+    _razorpay.on(Razorpay.EVENT_PAYMENT_SUCCESS, _handlePaymentSuccess);
+    _razorpay.on(Razorpay.EVENT_PAYMENT_ERROR, _handlePaymentError);
+    _razorpay.on(Razorpay.EVENT_EXTERNAL_WALLET, _handleExternalWallet);
+  }
+
+  @override
+  void dispose() {
+    _razorpay.clear();
+    _nameController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    super.dispose();
+  }
+
   double _calculateBasePrice() {
-    return property.pricePerHour * hours;
+    return widget.property.pricePerHour * widget.hours;
   }
 
   double _calculateGST() {
@@ -30,6 +62,160 @@ class PropertyDetailScreen extends StatelessWidget {
 
   double _calculateTotalPrice() {
     return _calculateBasePrice() + _calculateGST();
+  }
+
+  void _handlePaymentSuccess(PaymentSuccessResponse response) {
+    Navigator.pop(context); // Close the dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => AlertDialog(
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(20),
+        ),
+        title: const Row(
+          children: [
+            Icon(Icons.check_circle, color: Colors.green, size: 28),
+            SizedBox(width: 10),
+            Text('Payment Successful'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text(
+              'Your booking has been confirmed!',
+              style: TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 15),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey[100],
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Payment ID',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.grey[600],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    response.paymentId ?? 'N/A',
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  if (response.orderId != null) ...[
+                    const SizedBox(height: 10),
+                    Text(
+                      'Order ID',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[600],
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      response.orderId!,
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
+        ),
+        actions: [
+          ElevatedButton(
+            onPressed: () {
+              Navigator.popUntil(context, (route) => route.isFirst);
+            },
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFFE31E24),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 30,
+                vertical: 12,
+              ),
+            ),
+            child: const Text('Done'),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _handlePaymentError(PaymentFailureResponse response) {
+    Navigator.pop(context); // Close the dialog
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Payment Failed: ${response.message ?? 'Unknown error'}'),
+        backgroundColor: Colors.red,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+        duration: const Duration(seconds: 4),
+      ),
+    );
+  }
+
+  void _handleExternalWallet(ExternalWalletResponse response) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('External Wallet: ${response.walletName ?? 'Unknown'}'),
+        backgroundColor: Colors.blue,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(10),
+        ),
+      ),
+    );
+  }
+
+  void _openCheckout() {
+    var options = {
+      'key': _razorpayKey,
+      'amount': (_calculateTotalPrice() * 100).toInt(), // Amount in paise
+      'name': 'SSH Hotels',
+      'description': 'Booking at ${widget.property.name}',
+      'prefill': {
+        'contact': _phoneController.text,
+        'email': _emailController.text,
+      },
+      'theme': {
+        'color': '#E31E24'
+      },
+      'external': {
+        'wallets': ['paytm', 'phonepe', 'googlepay']
+      }
+    };
+
+    try {
+      _razorpay.open(options);
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Error: $e'),
+          backgroundColor: Colors.red,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _bookNow(BuildContext context) {
@@ -41,59 +227,118 @@ class PropertyDetailScreen extends StatelessWidget {
         ),
         title: const Row(
           children: [
-            Icon(Icons.check_circle, color: Color(0xFFE31E24), size: 28),
+            Icon(Icons.person, color: Color(0xFFE31E24), size: 28),
             SizedBox(width: 10),
-            Text('Confirm Booking'),
+            Text('Enter Your Details'),
           ],
         ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              property.name,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              '${DateFormat('dd MMM, hh:mm a').format(fromDate)}\nto\n${DateFormat('dd MMM, hh:mm a').format(toDate)}',
-              style: TextStyle(
-                fontSize: 13,
-                color: Colors.grey[600],
-                height: 1.5,
-              ),
-            ),
-            const SizedBox(height: 15),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE31E24).withOpacity(0.1),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Total Amount',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w600,
-                    ),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TextField(
+                controller: _nameController,
+                decoration: InputDecoration(
+                  labelText: 'Full Name',
+                  prefixIcon: const Icon(Icons.person_outline),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  Text(
-                    '₹${_calculateTotalPrice().toStringAsFixed(0)}',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFFE31E24),
-                    ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
                   ),
-                ],
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 15),
+              TextField(
+                controller: _emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  labelText: 'Email',
+                  prefixIcon: const Icon(Icons.email_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                ),
+              ),
+              const SizedBox(height: 15),
+              TextField(
+                controller: _phoneController,
+                keyboardType: TextInputType.phone,
+                maxLength: 10,
+                decoration: InputDecoration(
+                  labelText: 'Phone Number',
+                  prefixIcon: const Icon(Icons.phone_outlined),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  counterText: '',
+                ),
+              ),
+              const SizedBox(height: 20),
+              Container(
+                padding: const EdgeInsets.all(15),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE31E24).withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      widget.property.name,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      '${DateFormat('dd MMM, hh:mm a').format(widget.fromDate)}\nto\n${DateFormat('dd MMM, hh:mm a').format(widget.toDate)}',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.grey[700],
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    const Divider(),
+                    const SizedBox(height: 8),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Total Amount',
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16,
+                          ),
+                        ),
+                        Text(
+                          '₹${_calculateTotalPrice().toStringAsFixed(0)}',
+                          style: const TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFFE31E24),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
         actions: [
           TextButton(
@@ -105,18 +350,39 @@ class PropertyDetailScreen extends StatelessWidget {
           ),
           ElevatedButton(
             onPressed: () {
-              Navigator.pop(context);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Booking confirmed successfully!'),
-                  backgroundColor: Colors.green,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
+              if (_nameController.text.isEmpty ||
+                  _emailController.text.isEmpty ||
+                  _phoneController.text.isEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please fill all details'),
+                    backgroundColor: Colors.red,
                   ),
-                ),
-              );
-              Navigator.popUntil(context, (route) => route.isFirst);
+                );
+                return;
+              }
+
+              if (_phoneController.text.length != 10) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a valid 10-digit phone number'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              if (!_emailController.text.contains('@')) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text('Please enter a valid email'),
+                    backgroundColor: Colors.red,
+                  ),
+                );
+                return;
+              }
+
+              _openCheckout();
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: const Color(0xFFE31E24),
@@ -124,8 +390,12 @@ class PropertyDetailScreen extends StatelessWidget {
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
               ),
+              padding: const EdgeInsets.symmetric(
+                horizontal: 24,
+                vertical: 12,
+              ),
             ),
-            child: const Text('Confirm'),
+            child: const Text('Proceed to Pay'),
           ),
         ],
       ),
@@ -202,14 +472,14 @@ class PropertyDetailScreen extends StatelessWidget {
               background: Container(
                 color: const Color(0xFFE31E24).withOpacity(0.1),
                 child: Image.asset(
-                  property.image,
+                  widget.property.image,
                   fit: BoxFit.cover,
                   errorBuilder: (context, error, stackTrace) {
                     return Center(
                       child: Icon(
-                        property.type == 'Resort'
+                        widget.property.type == 'Resort'
                             ? Icons.beach_access
-                            : property.type == 'Co-Living'
+                            : widget.property.type == 'Co-Living'
                                 ? Icons.apartment
                                 : Icons.hotel,
                         size: 80,
@@ -242,7 +512,7 @@ class PropertyDetailScreen extends StatelessWidget {
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
-                              property.type,
+                              widget.property.type,
                               style: const TextStyle(
                                 color: Color(0xFFE31E24),
                                 fontWeight: FontWeight.w600,
@@ -265,7 +535,7 @@ class PropertyDetailScreen extends StatelessWidget {
                                 const Icon(Icons.star, size: 16, color: Colors.amber),
                                 const SizedBox(width: 4),
                                 Text(
-                                  property.rating.toString(),
+                                  widget.property.rating.toString(),
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                     color: Colors.black87,
@@ -278,7 +548,7 @@ class PropertyDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 15),
                       Text(
-                        property.name,
+                        widget.property.name,
                         style: const TextStyle(
                           fontSize: 24,
                           fontWeight: FontWeight.bold,
@@ -291,7 +561,7 @@ class PropertyDetailScreen extends StatelessWidget {
                           Icon(Icons.location_on, size: 18, color: Colors.grey[600]),
                           const SizedBox(width: 5),
                           Text(
-                            property.location,
+                            widget.property.location,
                             style: TextStyle(
                               fontSize: 14,
                               color: Colors.grey[600],
@@ -301,7 +571,7 @@ class PropertyDetailScreen extends StatelessWidget {
                       ),
                       const SizedBox(height: 15),
                       Text(
-                        property.description,
+                        widget.property.description,
                         style: TextStyle(
                           fontSize: 14,
                           color: Colors.grey[700],
@@ -329,25 +599,25 @@ class PropertyDetailScreen extends StatelessWidget {
                       _buildDetailRow(
                         Icons.calendar_today,
                         'Check-in',
-                        DateFormat('dd MMM yyyy, hh:mm a').format(fromDate),
+                        DateFormat('dd MMM yyyy, hh:mm a').format(widget.fromDate),
                       ),
                       const SizedBox(height: 12),
                       _buildDetailRow(
                         Icons.calendar_today,
                         'Check-out',
-                        DateFormat('dd MMM yyyy, hh:mm a').format(toDate),
+                        DateFormat('dd MMM yyyy, hh:mm a').format(widget.toDate),
                       ),
                       const SizedBox(height: 12),
                       _buildDetailRow(
                         Icons.access_time,
                         'Duration',
-                        '$hours hour${hours > 1 ? 's' : ''}',
+                        '${widget.hours} hour${widget.hours > 1 ? 's' : ''}',
                       ),
                       const SizedBox(height: 12),
                       _buildDetailRow(
                         Icons.people,
                         'Guests',
-                        '$adults Adult${adults > 1 ? 's' : ''}${children > 0 ? ', $children Child${children > 1 ? 'ren' : ''}' : ''}',
+                        '${widget.adults} Adult${widget.adults > 1 ? 's' : ''}${widget.children > 0 ? ', ${widget.children} Child${widget.children > 1 ? 'ren' : ''}' : ''}',
                       ),
                     ],
                   ),
@@ -370,7 +640,7 @@ class PropertyDetailScreen extends StatelessWidget {
                       Wrap(
                         spacing: 10,
                         runSpacing: 10,
-                        children: property.amenities.map((amenity) {
+                        children: widget.property.amenities.map((amenity) {
                           return Container(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 15,
@@ -433,7 +703,7 @@ class PropertyDetailScreen extends StatelessWidget {
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  '₹${property.pricePerHour} × $hours hours',
+                                  '₹${widget.property.pricePerHour} × ${widget.hours} hours',
                                   style: TextStyle(
                                     fontSize: 14,
                                     color: Colors.grey[700],

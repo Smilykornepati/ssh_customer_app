@@ -92,7 +92,7 @@ class AboutUsScreen extends StatelessWidget {
                     icon: Icons.history,
                     iconColor: const Color(0xFFE31E24),
                     title: 'Our Story',
-                    content: 'Founded in 2025 by Soma Shekar Reddy in Bangalore, SSH Short Stay Hotels was born from a vision to revolutionize the hospitality industry. We recognized the need for flexible, affordable, and quality accommodations for travelers who need a place to stay for just a few hours.',
+                    content: 'Founded in 2025 by Niranjani Reddy in Bangalore, SSH Short Stay Hotels was born from a vision to revolutionize the hospitality industry. We recognized the need for flexible, affordable, and quality accommodations for travelers who need a place to stay for just a few hours.',
                   ),
                   const SizedBox(height: 15),
                   
@@ -187,7 +187,7 @@ class AboutUsScreen extends StatelessWidget {
                         ),
                         const SizedBox(height: 15),
                         const Text(
-                          'Soma Shekar Reddy',
+                          'C. Niranjani Reddy',
                           style: TextStyle(
                             fontSize: 20,
                             fontWeight: FontWeight.bold,
