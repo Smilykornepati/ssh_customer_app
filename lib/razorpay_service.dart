@@ -6,7 +6,7 @@ class RazorpayService {
   late Razorpay _razorpay;
   
   // TODO: Replace with your correct Razorpay key
-  static const String _razorpayKey = 'rzp_live_RmFBaLmTDh2VJ6';
+  static const String _razorpayKey = 'rzp_test_RpCBfTtB7Lga2z';
   
   Function(PaymentSuccessResponse)? onSuccess;
   Function(PaymentFailureResponse)? onFailure;

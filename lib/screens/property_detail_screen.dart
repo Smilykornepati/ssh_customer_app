@@ -4,7 +4,6 @@ import 'package:razorpay_flutter/razorpay_flutter.dart';
 import '../models/property_model.dart';
 import '../models/booking_model.dart';
 import '../utils/booking_manager.dart';
-import 'dart:math';
 
 class EnhancedPropertyDetailScreen extends StatefulWidget {
   final Property property;
@@ -34,7 +33,7 @@ class _EnhancedPropertyDetailScreenState extends State<EnhancedPropertyDetailScr
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _phoneController = TextEditingController();
 
-  static const String _razorpayKey = 'rzp_live_RmFBaLmTDh2VJ6';
+  static const String _razorpayKey = 'rzp_test_RpCBfTtB7Lga2z';
 
   @override
   void initState() {
@@ -218,6 +217,11 @@ class _EnhancedPropertyDetailScreenState extends State<EnhancedPropertyDetailScr
 
   void _handlePaymentError(PaymentFailureResponse response) {
     Navigator.pop(context);
+    
+    // Detailed error logging
+    debugPrint('Payment Error Code: ${response.code}');
+    debugPrint('Payment Error Message: ${response.message}');
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Row(
@@ -238,6 +242,8 @@ class _EnhancedPropertyDetailScreenState extends State<EnhancedPropertyDetailScr
   }
 
   void _handleExternalWallet(ExternalWalletResponse response) {
+    debugPrint('External Wallet Selected: ${response.walletName}');
+    
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text('Selected: ${response.walletName ?? 'External Wallet'}'),
@@ -249,6 +255,12 @@ class _EnhancedPropertyDetailScreenState extends State<EnhancedPropertyDetailScr
   }
 
   void _openCheckout() {
+    debugPrint('Opening Razorpay Checkout...');
+    debugPrint('Amount: ${(_calculateTotalPrice() * 100).toInt()}');
+    debugPrint('Contact: ${_phoneController.text}');
+    debugPrint('Email: ${_emailController.text}');
+    
+    // Simplified configuration that works on emulator
     var options = {
       'key': _razorpayKey,
       'amount': (_calculateTotalPrice() * 100).toInt(),
@@ -259,40 +271,30 @@ class _EnhancedPropertyDetailScreenState extends State<EnhancedPropertyDetailScr
         'email': _emailController.text,
         'name': _nameController.text,
       },
-      'theme': {'color': '#E31E24'},
-      'method': {
-        'upi': true,
-        'card': true,
-        'netbanking': true,
-        'wallet': true,
-      },
-      'config': {
-        'display': {
-          'blocks': {
-            'banks': {
-              'name': 'Pay using UPI',
-              'instruments': [
-                {
-                  'method': 'upi',
-                  'flows': ['qr', 'intent', 'collect'],
-                }
-              ],
-            }
-          },
-          'sequence': ['block.banks'],
-          'preferences': {'show_default_blocks': true},
-        }
+      'theme': {
+        'color': '#E31E24'
       },
     };
 
     try {
+      debugPrint('Attempting to open Razorpay...');
       _razorpay.open(options);
+      debugPrint('Razorpay opened successfully');
     } catch (e) {
+      debugPrint('Critical Razorpay Error: $e');
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Error: $e'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Error opening payment:', style: TextStyle(fontWeight: FontWeight.bold)),
+              Text(e.toString()),
+            ],
+          ),
           backgroundColor: Colors.red,
           behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 5),
         ),
       );
     }
@@ -454,8 +456,12 @@ class _EnhancedPropertyDetailScreenState extends State<EnhancedPropertyDetailScr
                       height: 54,
                       child: ElevatedButton(
                         onPressed: () {
+                          debugPrint('Pay button pressed');
                           if (_validateInputs()) {
+                            debugPrint('Validation passed, opening checkout');
                             _openCheckout();
+                          } else {
+                            debugPrint('Validation failed');
                           }
                         },
                         style: ElevatedButton.styleFrom(
@@ -475,6 +481,28 @@ class _EnhancedPropertyDetailScreenState extends State<EnhancedPropertyDetailScr
                             ),
                           ],
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    // Add test mode indicator
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.info_outline, color: Colors.amber, size: 20),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Testing on emulator? Use test card: 4111 1111 1111 1111',
+                              style: TextStyle(fontSize: 12, color: Colors.grey[800]),
+                            ),
+                          ),
+                        ],
                       ),
                     ),
                   ],

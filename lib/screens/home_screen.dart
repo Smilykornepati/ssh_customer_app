@@ -10,14 +10,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  String _selectedPropertyType = 'Resort';
+  String _selectedPropertyType = 'Co-Living';
   String? _selectedLocation;
   int _adults = 1;
   int _children = 0;
-  DateTime? _fromDate;
-  DateTime? _toDate;
+  DateTime? _checkInDate;
+  String? _selectedDuration;
 
-  final List<String> _propertyTypes = ['Resort', 'Co-Living', 'Hotel'];
+  final List<String> _propertyTypes = ['Co-Living', 'Hotel'];
   
   final List<String> _locations = [
     'Mumbai, Maharashtra',
@@ -37,15 +37,36 @@ class _HomeScreenState extends State<HomeScreen> {
     'Pune, Maharashtra',
   ];
 
-  int _calculateHoursBetweenDates() {
-    if (_fromDate == null || _toDate == null) return 0;
-    return _toDate!.difference(_fromDate!).inHours;
+  List<String> _getDurationOptions() {
+    if (_selectedPropertyType == 'Co-Living') {
+      return ['1 day', '5 days', '10 days'];
+    } else {
+      return ['3 hours', '6 hours', '9 hours'];
+    }
   }
 
-  void _selectFromDate() async {
+  DateTime? _calculateCheckOutDate() {
+    if (_checkInDate == null || _selectedDuration == null) return null;
+
+    if (_selectedPropertyType == 'Co-Living') {
+      final days = int.parse(_selectedDuration!.split(' ')[0]);
+      return _checkInDate!.add(Duration(days: days));
+    } else {
+      final hours = int.parse(_selectedDuration!.split(' ')[0]);
+      return _checkInDate!.add(Duration(hours: hours));
+    }
+  }
+
+  int _calculateHours() {
+    final checkOut = _calculateCheckOutDate();
+    if (_checkInDate == null || checkOut == null) return 0;
+    return checkOut.difference(_checkInDate!).inHours;
+  }
+
+  void _selectCheckInDate() async {
     final DateTime? pickedDate = await showDatePicker(
       context: context,
-      initialDate: _fromDate ?? DateTime.now(),
+      initialDate: _checkInDate ?? DateTime.now(),
       firstDate: DateTime.now(),
       lastDate: DateTime.now().add(const Duration(days: 365)),
       builder: (context, child) {
@@ -78,70 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
       if (pickedTime != null) {
         setState(() {
-          _fromDate = DateTime(
-            pickedDate.year,
-            pickedDate.month,
-            pickedDate.day,
-            pickedTime.hour,
-            pickedTime.minute,
-          );
-          if (_toDate != null && _toDate!.isBefore(_fromDate!)) {
-            _toDate = null;
-          }
-        });
-      }
-    }
-  }
-
-  void _selectToDate() async {
-    if (_fromDate == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Please select check-in date first'),
-          backgroundColor: const Color(0xFFE31E24),
-          behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        ),
-      );
-      return;
-    }
-
-    final DateTime? pickedDate = await showDatePicker(
-      context: context,
-      initialDate: _toDate ?? _fromDate!.add(const Duration(days: 1)),
-      firstDate: _fromDate!,
-      lastDate: _fromDate!.add(const Duration(days: 30)),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: const ColorScheme.light(
-              primary: Color(0xFFE31E24),
-            ),
-          ),
-          child: child!,
-        );
-      },
-    );
-
-    if (pickedDate != null) {
-      final TimeOfDay? pickedTime = await showTimePicker(
-        context: context,
-        initialTime: TimeOfDay.now(),
-        builder: (context, child) {
-          return Theme(
-            data: Theme.of(context).copyWith(
-              colorScheme: const ColorScheme.light(
-                primary: Color(0xFFE31E24),
-              ),
-            ),
-            child: child!,
-          );
-        },
-      );
-
-      if (pickedTime != null) {
-        setState(() {
-          _toDate = DateTime(
+          _checkInDate = DateTime(
             pickedDate.year,
             pickedDate.month,
             pickedDate.day,
@@ -166,10 +124,22 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    if (_fromDate == null || _toDate == null) {
+    if (_checkInDate == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: const Text('Please select check-in and check-out dates'),
+          content: const Text('Please select check-in date'),
+          backgroundColor: const Color(0xFFE31E24),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+      return;
+    }
+
+    if (_selectedDuration == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: const Text('Please select duration'),
           backgroundColor: const Color(0xFFE31E24),
           behavior: SnackBarBehavior.floating,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -190,7 +160,8 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    final hours = _calculateHoursBetweenDates();
+    final checkOut = _calculateCheckOutDate()!;
+    final hours = _calculateHours();
     
     Navigator.push(
       context,
@@ -200,8 +171,8 @@ class _HomeScreenState extends State<HomeScreen> {
           location: _selectedLocation!,
           adults: _adults,
           children: _children,
-          fromDate: _fromDate!,
-          toDate: _toDate!,
+          fromDate: _checkInDate!,
+          toDate: checkOut,
           hours: hours,
         ),
       ),
@@ -210,7 +181,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final hours = _calculateHoursBetweenDates();
+    final hours = _calculateHours();
+    final checkOut = _calculateCheckOutDate();
 
     return Scaffold(
       backgroundColor: const Color(0xFFFAFAFA),
@@ -287,7 +259,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      'Book properties by the hour',
+                      'Book properties by the hour or day',
                       style: TextStyle(
                         fontSize: 15,
                         color: Colors.grey[600],
@@ -333,10 +305,11 @@ class _HomeScreenState extends State<HomeScreen> {
                             onTap: () {
                               setState(() {
                                 _selectedPropertyType = type;
+                                _selectedDuration = null; // Reset duration when changing property type
                               });
                             },
                             child: Container(
-                              margin: const EdgeInsets.only(right: 10),
+                              margin: EdgeInsets.only(right: type == _propertyTypes.last ? 0 : 10),
                               padding: const EdgeInsets.symmetric(vertical: 18),
                               decoration: BoxDecoration(
                                 color: isSelected ? const Color(0xFFE31E24) : Colors.white,
@@ -349,11 +322,9 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: Column(
                                 children: [
                                   Icon(
-                                    type == 'Resort'
-                                        ? Icons.beach_access_rounded
-                                        : type == 'Co-Living'
-                                            ? Icons.apartment_rounded
-                                            : Icons.hotel_rounded,
+                                    type == 'Co-Living'
+                                        ? Icons.apartment_rounded
+                                        : Icons.hotel_rounded,
                                     color: isSelected ? Colors.white : const Color(0xFF6B7280),
                                     size: 28,
                                   ),
@@ -633,7 +604,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                     const SizedBox(height: 24),
                     const Text(
-                      'Check-in & Check-out',
+                      'Check-in Date & Time',
                       style: TextStyle(
                         fontSize: 15,
                         fontWeight: FontWeight.w600,
@@ -641,115 +612,157 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: _selectFromDate,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
-                              ),
-                              padding: const EdgeInsets.all(16),
+                    GestureDetector(
+                      onTap: _selectCheckInDate,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
+                        ),
+                        padding: const EdgeInsets.all(16),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.calendar_today_rounded, size: 20, color: Color(0xFFE31E24)),
+                            const SizedBox(width: 12),
+                            Expanded(
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,
                                 children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.login_rounded, size: 18, color: Color(0xFFE31E24)),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _fromDate != null
-                                            ? DateFormat('dd MMM').format(_fromDate!)
-                                            : 'Check-in',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: _fromDate != null ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
                                   Text(
-                                    _fromDate != null ? DateFormat('hh:mm a').format(_fromDate!) : 'Select time',
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
+                                    _checkInDate != null
+                                        ? DateFormat('dd MMM yyyy').format(_checkInDate!)
+                                        : 'Select check-in date',
+                                    style: TextStyle(
+                                      fontSize: 15,
+                                      fontWeight: FontWeight.w600,
+                                      color: _checkInDate != null ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    _checkInDate != null ? DateFormat('hh:mm a').format(_checkInDate!) : 'Select time',
+                                    style: const TextStyle(fontSize: 13, color: Color(0xFF6B7280)),
                                   ),
                                 ],
                               ),
                             ),
-                          ),
+                          ],
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: GestureDetector(
-                            onTap: _selectToDate,
-                            child: Container(
-                              decoration: BoxDecoration(
-                                color: Colors.white,
-                                borderRadius: BorderRadius.circular(16),
-                                border: Border.all(color: const Color(0xFFE5E7EB), width: 1.5),
-                              ),
-                              padding: const EdgeInsets.all(16),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Row(
-                                    children: [
-                                      const Icon(Icons.logout_rounded, size: 18, color: Color(0xFFE31E24)),
-                                      const SizedBox(width: 8),
-                                      Text(
-                                        _toDate != null
-                                            ? DateFormat('dd MMM').format(_toDate!)
-                                            : 'Check-out',
-                                        style: TextStyle(
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w600,
-                                          color: _toDate != null ? const Color(0xFF1F2937) : const Color(0xFF9CA3AF),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                  const SizedBox(height: 6),
-                                  Text(
-                                    _toDate != null ? DateFormat('hh:mm a').format(_toDate!) : 'Select time',
-                                    style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280)),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
+                      ),
                     ),
-                    if (hours > 0) ...[
+                    const SizedBox(height: 24),
+                    const Text(
+                      'Duration',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF374151),
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    Wrap(
+                      spacing: 10,
+                      runSpacing: 10,
+                      children: _getDurationOptions().map((duration) {
+                        final isSelected = _selectedDuration == duration;
+                        return GestureDetector(
+                          onTap: () {
+                            setState(() {
+                              _selectedDuration = duration;
+                            });
+                          },
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
+                            decoration: BoxDecoration(
+                              color: isSelected ? const Color(0xFFE31E24) : Colors.white,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(
+                                color: isSelected ? const Color(0xFFE31E24) : const Color(0xFFE5E7EB),
+                                width: 1.5,
+                              ),
+                            ),
+                            child: Text(
+                              duration,
+                              style: TextStyle(
+                                color: isSelected ? Colors.white : const Color(0xFF6B7280),
+                                fontWeight: FontWeight.w600,
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                    if (checkOut != null) ...[
                       const SizedBox(height: 16),
                       Container(
-                        padding: const EdgeInsets.all(14),
+                        padding: const EdgeInsets.all(16),
                         decoration: BoxDecoration(
                           color: const Color(0xFFFFF5F5),
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: const Color(0xFFFFE4E6), width: 1.5),
                         ),
-                        child: Row(
+                        child: Column(
                           children: [
+                            Row(
+                              children: [
+                                Container(
+                                  padding: const EdgeInsets.all(8),
+                                  decoration: BoxDecoration(
+                                    color: const Color(0xFFE31E24).withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: const Icon(Icons.logout_rounded, color: Color(0xFFE31E24), size: 18),
+                                ),
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      const Text(
+                                        'Check-out',
+                                        style: TextStyle(
+                                          color: Color(0xFF6B7280),
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                      ),
+                                      const SizedBox(height: 2),
+                                      Text(
+                                        DateFormat('dd MMM yyyy, hh:mm a').format(checkOut),
+                                        style: const TextStyle(
+                                          color: Color(0xFFE31E24),
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 14,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
                             Container(
-                              padding: const EdgeInsets.all(8),
+                              padding: const EdgeInsets.all(12),
                               decoration: BoxDecoration(
-                                color: const Color(0xFFE31E24).withOpacity(0.1),
+                                color: Colors.white,
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: const Icon(Icons.schedule_rounded, color: Color(0xFFE31E24), size: 18),
-                            ),
-                            const SizedBox(width: 12),
-                            Text(
-                              'Duration: $hours hour${hours > 1 ? 's' : ''}',
-                              style: const TextStyle(
-                                color: Color(0xFFE31E24),
-                                fontWeight: FontWeight.w600,
-                                fontSize: 14,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  const Icon(Icons.schedule_rounded, color: Color(0xFFE31E24), size: 16),
+                                  const SizedBox(width: 8),
+                                  Text(
+                                    'Total: ${hours > 24 ? '${(hours / 24).floor()} day${(hours / 24).floor() > 1 ? 's' : ''} ${hours % 24 > 0 ? '${hours % 24}h' : ''}' : '$hours hour${hours > 1 ? 's' : ''}'}',
+                                    style: const TextStyle(
+                                      color: Color(0xFFE31E24),
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                           ],
