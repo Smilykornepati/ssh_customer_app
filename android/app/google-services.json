@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "681070215434",
+    "project_id": "sshhotels-724c1",
+    "storage_bucket": "sshhotels-724c1.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:681070215434:android:bf0d50fa0069d992433af3",
+        "android_client_info": {
+          "package_name": "com.example.ssh_customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBDLPRwF05f77vlJ1F3JbJ2Ek8TTTCs2Qc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
