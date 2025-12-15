@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import 'package:ssh_customer/firebase_options.dart';
 import 'screens/login_screen.dart';
 import 'services/auth_service.dart';
+import 'services/booking_service.dart'; // NEW
 import 'services/api_service.dart';
 import 'utils/constants.dart';
 
@@ -12,8 +13,8 @@ Future<void> main() async {
   
   // Initialize Firebase
   await Firebase.initializeApp(
-  options: DefaultFirebaseOptions.currentPlatform,
-);
+    options: DefaultFirebaseOptions.currentPlatform,
+  );
 
   runApp(const MyApp());
 }
@@ -26,6 +27,7 @@ class MyApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         ChangeNotifierProvider(create: (_) => AuthService()),
+        ChangeNotifierProvider(create: (_) => BookingService()), // NEW
       ],
       child: MaterialApp(
         title: Constants.appName,
@@ -83,6 +85,10 @@ class _AppLoaderState extends State<AppLoader> {
       setState(() => _isInitializing = false);
       
       if (isAuthenticated) {
+        // Load user bookings
+        final bookingService = Provider.of<BookingService>(context, listen: false);
+        await bookingService.fetchBookings();
+        
         // Navigate to home screen
         // You'll need to import your home/bottom navigation screen
         // Navigator.pushReplacementNamed(context, '/home');

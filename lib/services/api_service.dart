@@ -11,6 +11,7 @@ class ApiService {
   ApiService._internal();
 
   late Dio _dio;
+  Dio get dio => _dio;
   final String baseUrl = Constants.apiBaseUrl;
 
   Future<void> initialize() async {

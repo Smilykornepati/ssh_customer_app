@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+import 'package:ssh_customer/services/booking_service.dart';
 import '../models/property_model.dart';
 import '../models/booking_model.dart';
 import '../utils/booking_manager.dart';
@@ -65,34 +67,67 @@ class _EnhancedPropertyDetailScreenState extends State<EnhancedPropertyDetailScr
     return _calculateBasePrice() + _calculateGST();
   }
 
-  void _handlePaymentSuccess(PaymentSuccessResponse response) {
-    Navigator.pop(context); // Close payment dialog
+ // Update the _handlePaymentSuccess method in property_detail_screen.dart
 
-    // Create booking
-    final booking = BookingModel(
-      id: 'BK${DateTime.now().millisecondsSinceEpoch}',
-      property: widget.property,
-      fromDate: widget.fromDate,
-      toDate: widget.toDate,
+void _handlePaymentSuccess(PaymentSuccessResponse response) async {
+  Navigator.pop(context); // Close payment dialog
+
+  // Show loading
+  showDialog(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) => const Center(
+      child: CircularProgressIndicator(color: Colors.white),
+    ),
+  );
+
+  try {
+    // Save booking to database
+    final bookingService = Provider.of<BookingService>(context, listen: false);
+    
+    await bookingService.createBooking(
+      propertyId: widget.property.id,
+      propertyName: widget.property.name,
+      propertyType: widget.property.type,
+      propertyLocation: widget.property.location,
+      propertyImage: widget.property.image,
+      checkInDate: widget.fromDate,
+      checkOutDate: widget.toDate,
+      hours: widget.hours,
       adults: widget.adults,
       children: widget.children,
-      hours: widget.hours,
+      basePrice: _calculateBasePrice(),
+      gstAmount: _calculateGST(),
       totalPrice: _calculateTotalPrice(),
-      status: 'upcoming',
-      bookingDate: DateTime.now(),
+      paymentId: response.paymentId ?? '',
       guestName: _nameController.text,
       guestEmail: _emailController.text,
       guestPhone: _phoneController.text,
-      paymentId: response.paymentId,
     );
 
-    // Save booking
-    BookingManager().addBooking(booking);
-
+    // Close loading dialog
+    Navigator.pop(context);
+    
     // Show success dialog
     _showSuccessDialog(response);
+  } catch (error) {
+    // Close loading dialog
+    Navigator.pop(context);
+    
+    // Show error
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Booking saved but there was an error: $error'),
+        backgroundColor: Colors.orange,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      ),
+    );
+    
+    // Still show success dialog since payment succeeded
+    _showSuccessDialog(response);
   }
-
+}
   void _showSuccessDialog(PaymentSuccessResponse response) {
     showDialog(
       context: context,

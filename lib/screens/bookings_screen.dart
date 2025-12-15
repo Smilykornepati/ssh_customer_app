@@ -1,8 +1,9 @@
-// lib/screens/updated_bookings_screen.dart
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../models/booking_model.dart';
-import '../utils/booking_manager.dart';
+import '../services/booking_service.dart';
+import '../widgets/custom_snackbar.dart';
 
 class UpdatedBookingsScreen extends StatefulWidget {
   const UpdatedBookingsScreen({super.key});
@@ -12,6 +13,21 @@ class UpdatedBookingsScreen extends StatefulWidget {
 }
 
 class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
+  @override
+  void initState() {
+    super.initState();
+    _loadBookings();
+  }
+
+  Future<void> _loadBookings() async {
+    try {
+      final bookingService = Provider.of<BookingService>(context, listen: false);
+      await bookingService.fetchBookings();
+    } catch (error) {
+      CustomSnackbar.showError(context, 'Failed to load bookings');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -35,49 +51,65 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
           ),
         ),
       ),
-      body: DefaultTabController(
-        length: 3,
-        child: Column(
-          children: [
-            Container(
-              color: Colors.white,
-              child: TabBar(
-                labelColor: const Color(0xFFE31E24),
-                unselectedLabelColor: const Color(0xFF6B7280),
-                indicatorColor: const Color(0xFFE31E24),
-                indicatorWeight: 3,
-                labelStyle: const TextStyle(
-                  fontWeight: FontWeight.w800,
-                  fontSize: 15,
+      body: RefreshIndicator(
+        onRefresh: _loadBookings,
+        color: const Color(0xFFE31E24),
+        child: DefaultTabController(
+          length: 3,
+          child: Column(
+            children: [
+              Container(
+                color: Colors.white,
+                child: const TabBar(
+                  labelColor: Color(0xFFE31E24),
+                  unselectedLabelColor: Color(0xFF6B7280),
+                  indicatorColor: Color(0xFFE31E24),
+                  indicatorWeight: 3,
+                  labelStyle: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                  ),
+                  unselectedLabelStyle: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    fontSize: 15,
+                  ),
+                  tabs: [
+                    Tab(text: 'Upcoming'),
+                    Tab(text: 'Completed'),
+                    Tab(text: 'Cancelled'),
+                  ],
                 ),
-                unselectedLabelStyle: const TextStyle(
-                  fontWeight: FontWeight.w700,
-                  fontSize: 15,
+              ),
+              Expanded(
+                child: Consumer<BookingService>(
+                  builder: (context, bookingService, child) {
+                    if (bookingService.isLoading) {
+                      return const Center(
+                        child: CircularProgressIndicator(
+                          color: Color(0xFFE31E24),
+                        ),
+                      );
+                    }
+
+                    return TabBarView(
+                      children: [
+                        _buildBookingsList('upcoming', bookingService),
+                        _buildBookingsList('completed', bookingService),
+                        _buildBookingsList('cancelled', bookingService),
+                      ],
+                    );
+                  },
                 ),
-                tabs: const [
-                  Tab(text: 'Upcoming'),
-                  Tab(text: 'Completed'),
-                  Tab(text: 'Cancelled'),
-                ],
               ),
-            ),
-            Expanded(
-              child: TabBarView(
-                children: [
-                  _buildBookingsList('upcoming'),
-                  _buildBookingsList('completed'),
-                  _buildBookingsList('cancelled'),
-                ],
-              ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildBookingsList(String status) {
-    final bookings = BookingManager().getBookings(status);
+  Widget _buildBookingsList(String status, BookingService bookingService) {
+    final bookings = bookingService.getBookingsByStatus(status);
 
     if (bookings.isEmpty) {
       return Center(
@@ -148,7 +180,7 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Header with gradient background
+            // Header
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -178,7 +210,7 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
                       ],
                     ),
                     child: Icon(
-                      _getPropertyIcon(booking.property.type),
+                      _getPropertyIcon(booking.propertyType),
                       color: _getStatusColor(status),
                       size: 28,
                     ),
@@ -189,7 +221,7 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          booking.property.name,
+                          booking.propertyName,
                           style: const TextStyle(
                             fontSize: 17,
                             fontWeight: FontWeight.bold,
@@ -207,7 +239,7 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
                             const SizedBox(width: 4),
                             Expanded(
                               child: Text(
-                                booking.property.location,
+                                booking.propertyLocation,
                                 style: TextStyle(
                                   fontSize: 13,
                                   color: Colors.grey[600],
@@ -243,7 +275,7 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
               ),
             ),
             
-            // Booking details
+            // Details
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -274,7 +306,7 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
                           ],
                         ),
                         Text(
-                          booking.id,
+                          'BK${booking.id}',
                           style: const TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
@@ -357,7 +389,7 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
                   ),
                   const SizedBox(height: 16),
                   
-                  // Total Amount
+                  // Price Breakdown
                   Container(
                     padding: const EdgeInsets.all(14),
                     decoration: BoxDecoration(
@@ -373,31 +405,80 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
                         width: 1,
                       ),
                     ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    child: Column(
                       children: [
-                        const Text(
-                          'Total Amount Paid',
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xFF6B7280),
-                          ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'Base Price',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            Text(
+                              '₹${booking.basePrice.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1A1A1A),
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          '₹${booking.totalPrice.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                            color: Color(0xFFE31E24),
-                          ),
+                        const SizedBox(height: 6),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              'GST (18%)',
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            Text(
+                              '₹${booking.gstAmount.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1A1A1A),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 10),
+                          child: Divider(height: 1),
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            const Text(
+                              'Total Amount Paid',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF6B7280),
+                              ),
+                            ),
+                            Text(
+                              '₹${booking.totalPrice.toStringAsFixed(0)}',
+                              style: const TextStyle(
+                                fontSize: 20,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFFE31E24),
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                   
                   // Action Buttons for Upcoming bookings
-                  if (status == 'upcoming') ...[
+                  if (status == 'upcoming' && booking.isCancellable) ...[
                     const SizedBox(height: 16),
                     Row(
                       children: [
@@ -522,7 +603,7 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    booking.property.name,
+                    booking.propertyName,
                     style: const TextStyle(
                       fontWeight: FontWeight.bold,
                       fontSize: 14,
@@ -534,12 +615,31 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
                     style: TextStyle(fontSize: 12, color: Colors.grey[600]),
                   ),
                   const SizedBox(height: 8),
-                  const Text(
-                    'Note: Cancellation charges may apply',
-                    style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.red,
-                      fontStyle: FontStyle.italic,
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: booking.refundPercentage == 100
+                          ? Colors.green.withOpacity(0.1)
+                          : booking.refundPercentage == 50
+                              ? Colors.orange.withOpacity(0.1)
+                              : Colors.red.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      booking.refundPercentage == 100
+                          ? '✓ Full refund: ₹${booking.totalPrice.toStringAsFixed(0)}'
+                          : booking.refundPercentage == 50
+                              ? '50% refund: ₹${booking.refundAmount.toStringAsFixed(0)}'
+                              : 'No refund available',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: booking.refundPercentage == 100
+                            ? Colors.green[700]
+                            : booking.refundPercentage == 50
+                                ? Colors.orange[700]
+                                : Colors.red[700],
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ),
                 ],
@@ -550,25 +650,12 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('No, Keep it'),
+            child: const Text('Keep Booking'),
           ),
           ElevatedButton(
-            onPressed: () {
+            onPressed: () async {
               Navigator.pop(context);
-              setState(() {
-                // Update booking status to cancelled
-                // In a real app, you'd call an API here
-              });
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: const Text('Booking cancelled successfully'),
-                  backgroundColor: Colors.orange,
-                  behavior: SnackBarBehavior.floating,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                ),
-              );
+              await _cancelBooking(booking);
             },
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.red,
@@ -582,6 +669,20 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
         ],
       ),
     );
+  }
+
+  Future<void> _cancelBooking(BookingModel booking) async {
+    try {
+      final bookingService = Provider.of<BookingService>(context, listen: false);
+      final result = await bookingService.cancelBooking(int.parse(booking.id));
+      
+      CustomSnackbar.showSuccess(
+        context,
+        'Booking cancelled. ${result['refund_info']['refund_note']}',
+      );
+    } catch (error) {
+      CustomSnackbar.showError(context, 'Failed to cancel booking');
+    }
   }
 
   void _showBookingDetails(BookingModel booking) {
@@ -621,10 +722,9 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
                     ),
                     const SizedBox(height: 24),
                     _buildDetailSection('Property Information', [
-                      _buildDetailRow2('Name', booking.property.name),
-                      _buildDetailRow2('Type', booking.property.type),
-                      _buildDetailRow2('Location', booking.property.location),
-                      _buildDetailRow2('Rating', '⭐ ${booking.property.rating}'),
+                      _buildDetailRow2('Name', booking.propertyName),
+                      _buildDetailRow2('Type', booking.propertyType),
+                      _buildDetailRow2('Location', booking.propertyLocation),
                     ]),
                     const SizedBox(height: 16),
                     _buildDetailSection('Guest Information', [
@@ -634,7 +734,7 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
                     ]),
                     const SizedBox(height: 16),
                     _buildDetailSection('Booking Information', [
-                      _buildDetailRow2('Booking ID', booking.id),
+                      _buildDetailRow2('Booking ID', 'BK${booking.id}'),
                       _buildDetailRow2('Check-in', DateFormat('dd MMM yyyy, hh:mm a').format(booking.fromDate)),
                       _buildDetailRow2('Check-out', DateFormat('dd MMM yyyy, hh:mm a').format(booking.toDate)),
                       _buildDetailRow2('Duration', '${booking.hours} hour${booking.hours > 1 ? 's' : ''}'),
@@ -643,7 +743,10 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
                     const SizedBox(height: 16),
                     _buildDetailSection('Payment Information', [
                       _buildDetailRow2('Payment ID', booking.paymentId ?? 'N/A'),
+                      _buildDetailRow2('Base Price', '₹${booking.basePrice.toStringAsFixed(0)}'),
+                      _buildDetailRow2('GST (18%)', '₹${booking.gstAmount.toStringAsFixed(0)}'),
                       _buildDetailRow2('Total Amount', '₹${booking.totalPrice.toStringAsFixed(0)}'),
+                      _buildDetailRow2('Payment Status', booking.paymentStatus.toUpperCase()),
                       _buildDetailRow2('Booking Date', DateFormat('dd MMM yyyy').format(booking.bookingDate)),
                     ]),
                   ],
@@ -744,13 +847,13 @@ class _UpdatedBookingsScreenState extends State<UpdatedBookingsScreen> {
   Color _getStatusColor(String status) {
     switch (status) {
       case 'upcoming':
-        return const Color(0xFF3B82F6); // Blue
+        return const Color(0xFF3B82F6);
       case 'completed':
-        return const Color(0xFF10B981); // Green
+        return const Color(0xFF10B981);
       case 'cancelled':
-        return const Color(0xFFEF4444); // Red
+        return const Color(0xFFEF4444);
       default:
-        return const Color(0xFF6B7280); // Gray
+        return const Color(0xFF6B7280);
     }
   }
 }
