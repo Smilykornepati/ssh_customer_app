@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 class Constants {
   // API Configuration
-  static const String apiBaseUrl = 'https://sshhotels.in/api';
+  static const String apiBaseUrl = 'http://customerbackend.eba-a9azu9nd.ap-southeast-2.elasticbeanstalk.com/api';
   
   // App Configuration
   static const String appName = 'SSH Hotels';

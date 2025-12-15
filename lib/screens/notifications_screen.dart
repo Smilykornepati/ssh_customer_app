@@ -57,8 +57,7 @@ class _NotificationsScreenState extends State<NotificationsScreen> {
                   children: [
                     _buildSwitchTile('Push Notifications', 'Instant updates on your device', Icons.notifications_outlined, _pushNotifications, (value) => setState(() => _pushNotifications = value)),
                     _buildDivider(),
-                    _buildSwitchTile('Email Notifications', 'Receive updates via email', Icons.email_outlined, _emailNotifications, (value) => setState(() => _emailNotifications = value)),
-                    _buildDivider(),
+                   
                     _buildSwitchTile('SMS Notifications', 'Get text message alerts', Icons.sms_outlined, _smsNotifications, (value) => setState(() => _smsNotifications = value)),
                   ],
                 ),

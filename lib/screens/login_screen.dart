@@ -22,7 +22,6 @@ class _LoginScreenState extends State<LoginScreen> {
   String _verificationId = '';
   int? _resendToken;
 
-  // Firebase Auth instance
   final FirebaseAuth _auth = FirebaseAuth.instance;
 
   @override
@@ -32,9 +31,7 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  // Send OTP using Firebase
   Future<void> _sendOtp() async {
-    // Validate phone number
     final phone = _phoneController.text.trim();
     if (!Validators.isValidPhone(phone)) {
       _showError('Please enter a valid 10-digit mobile number');
@@ -42,9 +39,9 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _isLoading = true);
+    debugPrint('🔵 Sending OTP to +91$phone');
 
     try {
-      // Configure Firebase phone authentication
       await _auth.verifyPhoneNumber(
         phoneNumber: '+91$phone',
         verificationCompleted: _onVerificationCompleted,
@@ -55,23 +52,23 @@ class _LoginScreenState extends State<LoginScreen> {
         forceResendingToken: _resendToken,
       );
     } catch (error) {
+      debugPrint('🔴 Send OTP Error: $error');
       setState(() => _isLoading = false);
       _showError('Failed to send OTP. Please try again.');
     }
   }
 
-  // Handle verification completed automatically
   void _onVerificationCompleted(PhoneAuthCredential credential) async {
+    debugPrint('🟢 Auto verification completed');
     try {
-      // Sign in with credential
       final userCredential = await _auth.signInWithCredential(credential);
+      debugPrint('🟢 Firebase sign in successful');
       
       if (userCredential.user != null) {
-        // Get Firebase token
         final firebaseToken = await userCredential.user!.getIdToken();
+        debugPrint('🟢 Got Firebase token: ${firebaseToken?.substring(0, 20)}...');
         
         if (firebaseToken != null) {
-          // Verify with backend
           await _verifyWithBackend(firebaseToken);
         } else {
           setState(() => _isLoading = false);
@@ -79,13 +76,14 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } catch (error) {
+      debugPrint('🔴 Auto verification error: $error');
       setState(() => _isLoading = false);
-      _showError('Verification failed');
+      _showError('Verification failed: $error');
     }
   }
 
-  // Handle verification failed
   void _onVerificationFailed(FirebaseAuthException error) {
+    debugPrint('🔴 Verification failed: ${error.code} - ${error.message}');
     setState(() => _isLoading = false);
     
     String errorMessage = 'Failed to verify phone number';
@@ -102,13 +100,15 @@ class _LoginScreenState extends State<LoginScreen> {
       case 'user-disabled':
         errorMessage = 'This user has been disabled';
         break;
+      default:
+        errorMessage = error.message ?? errorMessage;
     }
     
     _showError(errorMessage);
   }
 
-  // Handle code sent
   void _onCodeSent(String verificationId, int? resendToken) {
+    debugPrint('🟢 OTP sent successfully. Verification ID: ${verificationId.substring(0, 20)}...');
     setState(() {
       _isLoading = false;
       _isOtpSent = true;
@@ -119,12 +119,10 @@ class _LoginScreenState extends State<LoginScreen> {
     _showSuccess('OTP sent successfully to +91 ${_phoneController.text}');
   }
 
-  // Handle code auto retrieval timeout
   void _onCodeAutoRetrievalTimeout(String verificationId) {
-    _showError('OTP timeout. Please try again.');
+    debugPrint('🟡 Auto retrieval timeout');
   }
 
-  // Verify OTP manually
   Future<void> _verifyOtp() async {
     final otp = _otpController.text.trim();
     if (otp.length != 6) {
@@ -133,23 +131,23 @@ class _LoginScreenState extends State<LoginScreen> {
     }
 
     setState(() => _isLoading = true);
+    debugPrint('🔵 Verifying OTP: $otp');
 
     try {
-      // Create credential
       final credential = PhoneAuthProvider.credential(
         verificationId: _verificationId,
         smsCode: otp,
       );
+      debugPrint('🟢 Created phone credential');
 
-      // Sign in with credential
       final userCredential = await _auth.signInWithCredential(credential);
+      debugPrint('🟢 Firebase sign in successful. UID: ${userCredential.user?.uid}');
       
       if (userCredential.user != null) {
-        // Get Firebase token
         final firebaseToken = await userCredential.user!.getIdToken();
+        debugPrint('🟢 Got Firebase token: ${firebaseToken?.substring(0, 20)}...');
         
         if (firebaseToken != null) {
-          // Verify with backend
           await _verifyWithBackend(firebaseToken);
         } else {
           setState(() => _isLoading = false);
@@ -157,6 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
         }
       }
     } on FirebaseAuthException catch (error) {
+      debugPrint('🔴 Firebase Auth Error: ${error.code} - ${error.message}');
       setState(() => _isLoading = false);
       
       String errorMessage = 'Invalid OTP';
@@ -164,66 +163,85 @@ class _LoginScreenState extends State<LoginScreen> {
         errorMessage = 'Invalid OTP entered';
       } else if (error.code == 'session-expired') {
         errorMessage = 'OTP expired. Please request a new one';
+      } else {
+        errorMessage = error.message ?? errorMessage;
       }
       
       _showError(errorMessage);
     } catch (error) {
+      debugPrint('🔴 Unexpected error: $error');
       setState(() => _isLoading = false);
       _showError('Verification failed. Please try again.');
     }
   }
 
-  // Verify with backend API
   Future<void> _verifyWithBackend(String firebaseToken) async {
+    debugPrint('🔵 Starting backend verification...');
+    debugPrint('Firebase Token: ${firebaseToken.substring(0, 50)}...');
+    
     try {
       final authService = Provider.of<AuthService>(context, listen: false);
       final phone = _phoneController.text.trim();
-      
-      // Get device info
       final deviceId = await _getDeviceId();
       
-      await authService.loginWithPhone(
+      debugPrint('🔵 Phone: +91$phone');
+      debugPrint('🔵 Device ID: $deviceId');
+      
+      final authResponse = await authService.loginWithPhone(
         firebaseToken: firebaseToken,
         phoneNumber: phone,
-        verificationId: _verificationId,
-        otp: _otpController.text.trim(),
         deviceId: deviceId,
         fcmToken: await _getFCMToken(),
       );
       
+      debugPrint('🟢 Backend verification successful!');
+      debugPrint('🟢 User ID: ${authResponse.user.id}');
+      debugPrint('🟢 User Name: ${authResponse.user.fullName}');
+      
       setState(() => _isLoading = false);
       
-      // Navigate to home
-      Navigator.pushAndRemoveUntil(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const BottomNavigationScreen(),
-        ),
-        (route) => false,
-      );
+      if (mounted) {
+        Navigator.pushAndRemoveUntil(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const BottomNavigationScreen(),
+          ),
+          (route) => false,
+        );
+      }
       
-    } catch (error) {
+    } catch (error, stackTrace) {
+      debugPrint('🔴 ============ BACKEND ERROR ============');
+      debugPrint('🔴 Error Type: ${error.runtimeType}');
+      debugPrint('🔴 Error Message: $error');
+      debugPrint('🔴 Stack Trace: $stackTrace');
+      debugPrint('🔴 =====================================');
+      
       setState(() => _isLoading = false);
-      _showError('Login failed. Please try again.');
+      
+      // Show detailed error to user
+      String errorMessage = 'Login failed: $error';
+      if (error.toString().contains('401')) {
+        errorMessage = 'Authentication failed. Please try again.';
+      } else if (error.toString().contains('network') || error.toString().contains('connection')) {
+        errorMessage = 'Network error. Please check your connection.';
+      }
+      
+      _showError(errorMessage);
       
       // Sign out from Firebase on error
       await _auth.signOut();
     }
   }
 
-  // Get device ID
   Future<String> _getDeviceId() async {
-    // Generate a device ID (in production, use device_info_plus package)
     return DateTime.now().millisecondsSinceEpoch.toString();
   }
 
-  // Get FCM token (placeholder)
   Future<String?> _getFCMToken() async {
-    // Implement with firebase_messaging package
     return null;
   }
 
-  // Resend OTP
   Future<void> _resendOtp() async {
     setState(() {
       _otpController.clear();
@@ -234,11 +252,15 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showError(String message) {
-    CustomSnackbar.showError(context, message);
+    if (mounted) {
+      CustomSnackbar.showError(context, message);
+    }
   }
 
   void _showSuccess(String message) {
-    CustomSnackbar.showSuccess(context, message);
+    if (mounted) {
+      CustomSnackbar.showSuccess(context, message);
+    }
   }
 
   @override
@@ -248,7 +270,6 @@ class _LoginScreenState extends State<LoginScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            // Header image section
             Expanded(
               flex: 5,
               child: Container(
@@ -308,7 +329,6 @@ class _LoginScreenState extends State<LoginScreen> {
               ),
             ),
             
-            // Form section
             Expanded(
               flex: 4,
               child: SingleChildScrollView(
