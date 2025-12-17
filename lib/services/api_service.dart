@@ -1,3 +1,4 @@
+// lib/services/api_service.dart
 import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter/foundation.dart';
@@ -78,73 +79,75 @@ class ApiService {
     }
   }
 
- 
-Future<AuthResponse> verifyOTP({
-  required String firebaseToken,
-  required String phoneNumber,
-  String? deviceId,
-  String? fcmToken,
-}) async {
-  debugPrint('🔵 API: Starting verifyOTP call');
-  debugPrint('🔵 API: Base URL: $baseUrl');
-  debugPrint('🔵 API: Phone: +91$phoneNumber');
-  debugPrint('🔵 API: Device ID: $deviceId');
-  debugPrint('🔵 API: Firebase Token: ${firebaseToken.substring(0, 30)}...');
-  
-  try {
-    final requestData = {
-      'firebase_token': firebaseToken,
-      'phone_number': phoneNumber,
-      'device_id': deviceId,
-      'fcm_token': fcmToken,
-      'device_type': 'mobile',
-      'user_agent': 'Flutter App',
-    };
+  // FIXED: Changed to use snake_case field names that backend expects
+  Future<AuthResponse> verifyOTP({
+    required String firebaseToken,
+    required String phoneNumber,
+    String? deviceId,
+    String? fcmToken,
+  }) async {
+    debugPrint('🔵 API: Starting verifyOTP call');
+    debugPrint('🔵 API: Base URL: $baseUrl');
+    debugPrint('🔵 API: Phone: +91$phoneNumber');
+    debugPrint('🔵 API: Device ID: $deviceId');
+    debugPrint('🔵 API: Firebase Token: ${firebaseToken.substring(0, 30)}...');
     
-    debugPrint('🔵 API: Request data: $requestData');
-    
-    final response = await _dio.post('/auth/verify-otp', data: requestData);
-    
-    debugPrint('🟢 API: Response status: ${response.statusCode}');
-    debugPrint('🟢 API: Response data: ${response.data}');
-    
-    if (response.statusCode == 200) {
-      final authResponse = AuthResponse.fromJson(response.data['data']);
+    try {
+      // IMPORTANT: Backend expects snake_case field names
+      final requestData = {
+        'firebase_token': firebaseToken,  // Changed from firebaseToken
+        'phone_number': phoneNumber,      // Changed from phoneNumber
+        'device_id': deviceId,            // Already correct
+        'fcm_token': fcmToken,            // Already correct
+        'device_type': 'mobile',
+        'user_agent': 'Flutter App',
+      };
       
-      // Store tokens
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setString('access_token', authResponse.tokens.accessToken);
-      await prefs.setString('refresh_token', authResponse.tokens.refreshToken);
-      await prefs.setInt('user_id', authResponse.user.id);
+      debugPrint('🔵 API: Request data: $requestData');
       
-      debugPrint('🟢 API: Tokens stored successfully');
+      final response = await _dio.post('/auth/verify-otp', data: requestData);
       
-      return authResponse;
-    } else {
-      debugPrint('🔴 API: Unexpected status code: ${response.statusCode}');
-      throw Exception('Failed to verify OTP: ${response.statusCode}');
-    }
-  } on DioException catch (e) {
-    debugPrint('🔴 API: DioException occurred');
-    debugPrint('🔴 API: Type: ${e.type}');
-    debugPrint('🔴 API: Message: ${e.message}');
-    debugPrint('🔴 API: Response: ${e.response?.data}');
-    debugPrint('🔴 API: Status Code: ${e.response?.statusCode}');
-    
-    if (e.response != null) {
-      final errorData = e.response!.data;
-      if (errorData is Map && errorData['message'] != null) {
-        throw Exception(errorData['message']);
+      debugPrint('🟢 API: Response status: ${response.statusCode}');
+      debugPrint('🟢 API: Response data: ${response.data}');
+      
+      if (response.statusCode == 200) {
+        final authResponse = AuthResponse.fromJson(response.data['data']);
+        
+        // Store tokens
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('access_token', authResponse.tokens.accessToken);
+        await prefs.setString('refresh_token', authResponse.tokens.refreshToken);
+        await prefs.setInt('user_id', authResponse.user.id);
+        
+        debugPrint('🟢 API: Tokens stored successfully');
+        
+        return authResponse;
+      } else {
+        debugPrint('🔴 API: Unexpected status code: ${response.statusCode}');
+        throw Exception('Failed to verify OTP: ${response.statusCode}');
       }
-      throw Exception('Server error: ${e.response!.statusCode}');
+    } on DioException catch (e) {
+      debugPrint('🔴 API: DioException occurred');
+      debugPrint('🔴 API: Type: ${e.type}');
+      debugPrint('🔴 API: Message: ${e.message}');
+      debugPrint('🔴 API: Response: ${e.response?.data}');
+      debugPrint('🔴 API: Status Code: ${e.response?.statusCode}');
+      
+      if (e.response != null) {
+        final errorData = e.response!.data;
+        if (errorData is Map && errorData['message'] != null) {
+          throw Exception(errorData['message']);
+        }
+        throw Exception('Server error: ${e.response!.statusCode}');
+      }
+      
+      throw Exception('Network error: ${e.message}');
+    } catch (error) {
+      debugPrint('🔴 API: Unexpected error: $error');
+      rethrow;
     }
-    
-    throw Exception('Network error: ${e.message}');
-  } catch (error) {
-    debugPrint('🔴 API: Unexpected error: $error');
-    rethrow;
   }
-}
+
   Future<AuthTokens?> refreshAuthToken(String refreshToken) async {
     try {
       final response = await _dio.post('/auth/refresh-token', data: {
